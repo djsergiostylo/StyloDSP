@@ -1,39 +1,55 @@
 import type { AudioModule } from './AudioModule';
+import { ChainManager } from './ChainManager';
 
 export class AudioEngine {
   private context: AudioContext | null = null;
   private source: AudioBufferSourceNode | null = null;
-  private inputGain: GainNode | null = null;
+  private inputNode: GainNode | null = null;
   private outputGain: GainNode | null = null;
-  private modules: AudioModule[] = [];
+  private readonly chain = new ChainManager();
 
   get isReady(): boolean {
     return this.context !== null;
   }
 
+  get audioContext(): AudioContext | null {
+    return this.context;
+  }
+
   async initialize(): Promise<void> {
     if (this.context) return;
     this.context = new AudioContext();
-    this.inputGain = this.context.createGain();
+    this.inputNode = this.context.createGain();
     this.outputGain = this.context.createGain();
-    this.inputGain.connect(this.outputGain);
     this.outputGain.connect(this.context.destination);
+    this.rebuildRouting();
   }
 
   setModules(modules: AudioModule[]): void {
-    this.modules = modules;
+    this.chain.setModules(modules);
+    if (this.context) this.rebuildRouting();
+  }
+
+  validateChain(): string[] {
+    return this.chain.validate();
   }
 
   async play(buffer: AudioBuffer): Promise<void> {
     await this.initialize();
-    if (!this.context || !this.inputGain) throw new Error('AudioEngine no inicializado');
+    if (!this.context || !this.inputNode) throw new Error('AudioEngine no inicializado');
+    const errors = this.validateChain();
+    if (errors.length > 0) throw new Error(`Cadena inválida: ${errors.join('; ')}`);
 
     if (this.context.state === 'suspended') await this.context.resume();
     this.stop();
 
     this.source = this.context.createBufferSource();
     this.source.buffer = buffer;
-    this.source.connect(this.inputGain);
+    this.source.connect(this.inputNode);
+    this.source.onended = () => {
+      this.source?.disconnect();
+      this.source = null;
+    };
     this.source.start();
   }
 
@@ -42,7 +58,7 @@ export class AudioEngine {
     try {
       this.source.stop();
     } catch {
-      // Already stopped.
+      // Source may already have stopped naturally.
     }
     this.source.disconnect();
     this.source = null;
@@ -56,11 +72,25 @@ export class AudioEngine {
 
   dispose(): void {
     this.stop();
-    this.inputGain?.disconnect();
+    this.inputNode?.disconnect();
     this.outputGain?.disconnect();
-    this.inputGain = null;
+    this.inputNode = null;
     this.outputGain = null;
-    this.context?.close();
+    void this.context?.close();
     this.context = null;
+  }
+
+  private rebuildRouting(): void {
+    if (!this.context || !this.inputNode || !this.outputGain) return;
+
+    this.inputNode.disconnect();
+    const built = this.chain.build({ audioContext: this.context });
+
+    if (built) {
+      this.inputNode.connect(built.input);
+      built.output.connect(this.outputGain);
+    } else {
+      this.inputNode.connect(this.outputGain);
+    }
   }
 }
