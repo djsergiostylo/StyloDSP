@@ -9,17 +9,17 @@ export interface AudioModuleGraph {
   output: AudioNode;
 }
 
-// Heterogeneous DSP chains need a broad default parameter type.
-// Concrete modules keep their own strongly typed parameter interfaces.
+// Heterogeneous DSP chains may receive legacy modules without a name.
+// ChainManager assigns a stable editable name when a module enters a chain.
 export interface AudioModule<TParams extends object = any> {
   readonly id: string;
   readonly type: string;
-  name: string;
+  name?: string;
   enabled: boolean;
   params: TParams;
   validate(): string[];
   reset(): void;
   createNode(context: AudioModuleContext): AudioNode | AudioModuleGraph;
-  serialize(): { id: string; type: string; name: string; enabled: boolean; params: TParams };
+  serialize(): { id: string; type: string; name?: string; enabled: boolean; params: TParams };
   getParameterDefinitions(): ParameterMap;
 }
