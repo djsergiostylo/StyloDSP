@@ -65,8 +65,11 @@ jobs:
 
       - name: Build Rust Core for arm64-v8a
         run: |
+          set -euo pipefail
           rm -rf android/app/src/main/jniLibs
-          cargo ndk -t arm64-v8a -P ${ANDROID_API} -o android/app/src/main/jniLibs build --manifest-path core/Cargo.toml --release
+          cd core
+          cargo ndk -t arm64-v8a -P ${ANDROID_API} -o ../android/app/src/main/jniLibs build --release
+          cd ..
           test -f android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so
 
       - name: Download Gradle
