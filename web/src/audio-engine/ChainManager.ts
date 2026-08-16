@@ -1,4 +1,4 @@
-import type { AudioModule, AudioModuleContext } from './AudioModule';
+import type { AudioModule, AudioModuleContext, AudioModuleGraph } from './AudioModule';
 
 export class ChainManager {
   private modules: AudioModule[] = [];
@@ -27,7 +27,7 @@ export class ChainManager {
     );
   }
 
-  build(context: AudioModuleContext): { input: AudioNode; output: AudioNode } | null {
+  build(context: AudioModuleContext): AudioModuleGraph | null {
     const active = this.modules.filter((module) => module.enabled);
     if (active.length === 0) return null;
 
@@ -35,10 +35,11 @@ export class ChainManager {
     let previous: AudioNode | null = null;
 
     for (const module of active) {
-      const node = module.createNode(context);
-      if (!input) input = node;
-      if (previous) previous.connect(node);
-      previous = node;
+      const created = module.createNode(context);
+      const graph = isGraph(created) ? created : { input: created, output: created };
+      if (!input) input = graph.input;
+      if (previous) previous.connect(graph.input);
+      previous = graph.output;
     }
 
     return input && previous ? { input, output: previous } : null;
@@ -47,4 +48,8 @@ export class ChainManager {
   serialize() {
     return this.modules.map((module) => module.serialize());
   }
+}
+
+function isGraph(value: AudioNode | AudioModuleGraph): value is AudioModuleGraph {
+  return 'input' in value && 'output' in value;
 }
