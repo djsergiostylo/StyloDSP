@@ -3,8 +3,9 @@ import { GainModule } from '../dsp/GainModule';
 import { EQModule } from '../dsp/EQModule';
 import { CompressorModule } from '../dsp/CompressorModule';
 import { SaturationModule } from '../dsp/SaturationModule';
+import { ClipperModule } from '../dsp/ClipperModule';
 
-const modules = [new GainModule(), new EQModule(), new CompressorModule(), new SaturationModule()];
+const modules = [new GainModule(), new EQModule(), new CompressorModule(), new SaturationModule(), new ClipperModule()];
 
 describe('parameter metadata contract', () => {
   it('exposes valid definitions for every current DSP module', () => {
@@ -22,9 +23,7 @@ describe('parameter metadata contract', () => {
           expect(definition.min!).toBeLessThanOrEqual(definition.max!);
           expect(definition.step!).toBeGreaterThan(0);
         }
-        if (definition.kind === 'select') {
-          expect(definition.options?.length).toBeGreaterThan(0);
-        }
+        if (definition.kind === 'select') expect(definition.options?.length).toBeGreaterThan(0);
       }
     }
   });
