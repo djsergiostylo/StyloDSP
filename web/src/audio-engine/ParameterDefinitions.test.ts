@@ -33,7 +33,7 @@ describe('parameter metadata contract', () => {
     for (const module of modules) {
       const definitions = module.getParameterDefinitions();
       for (const [id, definition] of Object.entries(definitions)) {
-        expect((module.params as Record<string, unknown>)[id]).toEqual(definition.value);
+        expect((module.params as unknown as Record<string, unknown>)[id]).toEqual(definition.value);
       }
     }
   });
