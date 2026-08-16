@@ -1,67 +1,12 @@
 import type { AudioModule, AudioModuleContext, AudioModuleGraph } from '../audio-engine/AudioModule';
-
-export interface CompressorParams {
-  thresholdDb: number;
-  kneeDb: number;
-  ratio: number;
-  attackMs: number;
-  releaseMs: number;
-  makeupGainDb: number;
-}
-
+import type { ParameterMap } from '../audio-engine/ParameterTypes';
+export interface CompressorParams { thresholdDb:number; kneeDb:number; ratio:number; attackMs:number; releaseMs:number; makeupGainDb:number; }
 export class CompressorModule implements AudioModule<CompressorParams> {
-  readonly id = crypto.randomUUID();
-  readonly type = 'compressor';
-  enabled = true;
-  params: CompressorParams = {
-    thresholdDb: -12,
-    kneeDb: 12,
-    ratio: 2,
-    attackMs: 10,
-    releaseMs: 100,
-    makeupGainDb: 0,
-  };
-
-  validate(): string[] {
-    const p = this.params;
-    const errors: string[] = [];
-    if (!Number.isFinite(p.thresholdDb) || p.thresholdDb < -100 || p.thresholdDb > 0) errors.push('thresholdDb fuera de rango [-100, 0]');
-    if (!Number.isFinite(p.kneeDb) || p.kneeDb < 0 || p.kneeDb > 40) errors.push('kneeDb fuera de rango [0, 40]');
-    if (!Number.isFinite(p.ratio) || p.ratio < 1 || p.ratio > 20) errors.push('ratio fuera de rango [1, 20]');
-    if (!Number.isFinite(p.attackMs) || p.attackMs < 0 || p.attackMs > 1000) errors.push('attackMs fuera de rango [0, 1000]');
-    if (!Number.isFinite(p.releaseMs) || p.releaseMs < 0 || p.releaseMs > 3000) errors.push('releaseMs fuera de rango [0, 3000]');
-    if (!Number.isFinite(p.makeupGainDb) || p.makeupGainDb < -24 || p.makeupGainDb > 24) errors.push('makeupGainDb fuera de rango [-24, 24]');
-    return errors;
-  }
-
-  reset(): void {
-    this.params = { thresholdDb: -12, kneeDb: 12, ratio: 2, attackMs: 10, releaseMs: 100, makeupGainDb: 0 };
-    this.enabled = true;
-  }
-
-  createNode({ audioContext }: AudioModuleContext): AudioModuleGraph {
-    const input = audioContext.createGain();
-    const compressor = audioContext.createDynamicsCompressor();
-    const makeup = audioContext.createGain();
-
-    if (this.enabled) {
-      compressor.threshold.value = this.params.thresholdDb;
-      compressor.knee.value = this.params.kneeDb;
-      compressor.ratio.value = this.params.ratio;
-      compressor.attack.value = this.params.attackMs / 1000;
-      compressor.release.value = this.params.releaseMs / 1000;
-      makeup.gain.value = Math.pow(10, this.params.makeupGainDb / 20);
-    } else {
-      compressor.ratio.value = 1;
-      makeup.gain.value = 1;
-    }
-
-    input.connect(compressor);
-    compressor.connect(makeup);
-    return { input, output: makeup };
-  }
-
-  serialize() {
-    return { id: this.id, type: this.type, enabled: this.enabled, params: { ...this.params } };
-  }
+ readonly id=crypto.randomUUID(); readonly type='compressor'; enabled=true;
+ params:CompressorParams={thresholdDb:-12,kneeDb:12,ratio:2,attackMs:10,releaseMs:100,makeupGainDb:0};
+ validate():string[]{const p=this.params,e:string[]=[];if(!Number.isFinite(p.thresholdDb)||p.thresholdDb<-100||p.thresholdDb>0)e.push('thresholdDb fuera de rango [-100, 0]');if(!Number.isFinite(p.kneeDb)||p.kneeDb<0||p.kneeDb>40)e.push('kneeDb fuera de rango [0, 40]');if(!Number.isFinite(p.ratio)||p.ratio<1||p.ratio>20)e.push('ratio fuera de rango [1, 20]');if(!Number.isFinite(p.attackMs)||p.attackMs<0||p.attackMs>1000)e.push('attackMs fuera de rango [0, 1000]');if(!Number.isFinite(p.releaseMs)||p.releaseMs<0||p.releaseMs>3000)e.push('releaseMs fuera de rango [0, 3000]');if(!Number.isFinite(p.makeupGainDb)||p.makeupGainDb<-24||p.makeupGainDb>24)e.push('makeupGainDb fuera de rango [-24, 24]');return e;}
+ reset():void{this.params={thresholdDb:-12,kneeDb:12,ratio:2,attackMs:10,releaseMs:100,makeupGainDb:0};this.enabled=true;}
+ getParameterDefinitions():ParameterMap{return {thresholdDb:{id:'thresholdDb',label:'Threshold',kind:'number',value:this.params.thresholdDb,min:-100,max:0,step:.1,unit:'dB',automatable:true},kneeDb:{id:'kneeDb',label:'Knee',kind:'number',value:this.params.kneeDb,min:0,max:40,step:.1,unit:'dB',automatable:true},ratio:{id:'ratio',label:'Ratio',kind:'number',value:this.params.ratio,min:1,max:20,step:.1,unit:':1',automatable:true},attackMs:{id:'attackMs',label:'Attack',kind:'number',value:this.params.attackMs,min:0,max:1000,step:.1,unit:'ms',automatable:true},releaseMs:{id:'releaseMs',label:'Release',kind:'number',value:this.params.releaseMs,min:0,max:3000,step:.1,unit:'ms',automatable:true},makeupGainDb:{id:'makeupGainDb',label:'Makeup',kind:'number',value:this.params.makeupGainDb,min:-24,max:24,step:.1,unit:'dB',automatable:true}};}
+ createNode({audioContext}:AudioModuleContext):AudioModuleGraph{const input=audioContext.createGain(),compressor=audioContext.createDynamicsCompressor(),makeup=audioContext.createGain();if(this.enabled){compressor.threshold.value=this.params.thresholdDb;compressor.knee.value=this.params.kneeDb;compressor.ratio.value=this.params.ratio;compressor.attack.value=this.params.attackMs/1000;compressor.release.value=this.params.releaseMs/1000;makeup.gain.value=Math.pow(10,this.params.makeupGainDb/20);}else{compressor.ratio.value=1;makeup.gain.value=1;}input.connect(compressor);compressor.connect(makeup);return{input,output:makeup};}
+ serialize(){return{id:this.id,type:this.type,enabled:this.enabled,params:{...this.params}};}
 }
