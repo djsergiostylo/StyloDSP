@@ -1,4 +1,4 @@
-import type { AudioModule, AudioModuleContext } from '../audio-engine/AudioModule';
+import type { AudioModule, AudioModuleContext, AudioModuleGraph } from '../audio-engine/AudioModule';
 
 export type SaturationCurve = 'tanh' | 'cubic' | 'hard';
 
@@ -24,12 +24,7 @@ export class SaturationModule implements AudioModule<SaturationParams> {
   readonly id = crypto.randomUUID();
   readonly type = 'saturation';
   enabled = true;
-  params: SaturationParams = {
-    curve: 'tanh',
-    driveDb: 0,
-    mix: 1,
-    outputDb: 0,
-  };
+  params: SaturationParams = { curve: 'tanh', driveDb: 0, mix: 1, outputDb: 0 };
 
   validate(): string[] {
     const p = this.params;
@@ -46,18 +41,17 @@ export class SaturationModule implements AudioModule<SaturationParams> {
     this.enabled = true;
   }
 
-  createNode({ audioContext }: AudioModuleContext): GainNode {
+  createNode({ audioContext }: AudioModuleContext): AudioModuleGraph {
     const input = audioContext.createGain();
     const processor = audioContext.createWaveShaper();
     const output = audioContext.createGain();
 
     if (!this.enabled) {
       input.connect(output);
-      return output;
+      return { input, output };
     }
 
     const drive = dbToLinear(this.params.driveDb);
-    const postGain = dbToLinear(this.params.outputDb);
     const curve = new Float32Array(2049);
     for (let i = 0; i < curve.length; i++) {
       const x = (i / (curve.length - 1)) * 2 - 1;
@@ -76,8 +70,8 @@ export class SaturationModule implements AudioModule<SaturationParams> {
     processor.connect(wet);
     dry.connect(output);
     wet.connect(output);
-    output.gain.value = postGain;
-    return output;
+    output.gain.value = dbToLinear(this.params.outputDb);
+    return { input, output };
   }
 
   serialize() {
