@@ -23,14 +23,10 @@ public:
 
     oboe::Result start() {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (stream_) {
-            return oboe::Result::OK;
-        }
+        if (stream_) return oboe::Result::OK;
 
         gain_ = stylo_gain_create(1.0f);
-        if (!gain_) {
-            return oboe::Result::ErrorInternal;
-        }
+        if (!gain_) return oboe::Result::ErrorInternal;
 
         oboe::AudioStreamBuilder builder;
         builder.setDirection(oboe::Direction::Output)
@@ -71,8 +67,8 @@ public:
         if (db < -60.0f) db = -60.0f;
         if (db > 12.0f) db = 12.0f;
         const float linear = std::pow(10.0f, db / 20.0f);
-        // Rust stores this value atomically. This call performs no allocation or
-        // blocking operation and is safe to invoke while the audio callback runs.
+        // The Rust side stores the value atomically. No allocation or blocking
+        // occurs in this parameter update.
         stylo_gain_set(gain_, linear);
     }
 
@@ -128,7 +124,8 @@ AudioEngine g_engine;
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_stylo_dsp_MainActivity_nativeStart(JNIEnv*, jobject) {
-    return g_engine.start() == oboe::Result::OK ? 0 : static_cast<jint>(g_engine.start());
+    const oboe::Result result = g_engine.start();
+    return result == oboe::Result::OK ? 0 : static_cast<jint>(result);
 }
 
 extern "C" JNIEXPORT void JNICALL
