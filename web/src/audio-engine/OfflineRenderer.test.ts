@@ -4,6 +4,7 @@ import { GainModule } from '../dsp/GainModule';
 import { EQModule } from '../dsp/EQModule';
 import { CompressorModule } from '../dsp/CompressorModule';
 import { SaturationModule } from '../dsp/SaturationModule';
+import { ClipperModule } from '../dsp/ClipperModule';
 import { validateAudioBuffer } from '../validation/AudioValidation';
 
 function createImpulse(context: OfflineAudioContext): AudioBuffer {
@@ -14,7 +15,7 @@ function createImpulse(context: OfflineAudioContext): AudioBuffer {
 }
 
 describe('STYLO offline mastering pipeline', () => {
-  it('renders Gain → EQ → Compressor → Saturation without invalid samples', async () => {
+  it('renders Gain → EQ → Compressor → Saturation → Clipper without invalid samples', async () => {
     const sourceContext = new OfflineAudioContext(2, 48000, 48000);
     const source = createImpulse(sourceContext);
 
@@ -40,7 +41,15 @@ describe('STYLO offline mastering pipeline', () => {
     saturation.params.mix = 1;
     saturation.params.outputDb = -3;
 
-    const rendered = await new OfflineRenderer().render(source, [gain, eq, compressor, saturation]);
+    const clipper = new ClipperModule();
+    clipper.params.mode = 'soft';
+    clipper.params.thresholdDb = -3;
+    clipper.params.driveDb = 6;
+    clipper.params.ceilingDb = -1;
+    clipper.params.mix = 1;
+    clipper.params.oversampling = '2x';
+
+    const rendered = await new OfflineRenderer().render(source, [gain, eq, compressor, saturation, clipper]);
     const report = validateAudioBuffer(rendered);
 
     expect(rendered.numberOfChannels).toBe(2);
