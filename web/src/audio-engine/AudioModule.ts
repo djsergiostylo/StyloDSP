@@ -7,7 +7,7 @@ export interface AudioModuleGraph {
   output: AudioNode;
 }
 
-export interface AudioModule<TParams extends Record<string, unknown> = Record<string, unknown>> {
+export interface AudioModule<TParams extends object = Record<string, unknown>> {
   readonly id: string;
   readonly type: string;
   enabled: boolean;
