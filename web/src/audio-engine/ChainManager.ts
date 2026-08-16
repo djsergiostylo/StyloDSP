@@ -26,7 +26,8 @@ export class ChainManager {
   duplicate(id: string, targetIndex?: number): AudioModule | null {
     const source = this.modules.find((module) => module.id === id); if (!source) return null;
     const factory = MODULE_FACTORIES[source.type]; if (!factory) return null;
-    const copy = factory(); Object.assign(copy.params, structuredClone(source.params)); copy.enabled = source.enabled; copy.name = uniqueDuplicateName(source.name, this.modules);
+    const copy = factory(); Object.assign(copy.params, structuredClone(source.params)); copy.enabled = source.enabled;
+    copy.name = uniqueDuplicateName(source.name ?? defaultModuleName(source.type, this.modules), this.modules);
     this.add(copy, targetIndex ?? this.modules.indexOf(source) + 1); return copy;
   }
   getModules(): readonly AudioModule[] { return this.modules; }
@@ -37,7 +38,9 @@ export class ChainManager {
     for (const module of active) { const created = module.createNode(context); const graph = isGraph(created) ? created : { input: created, output: created }; if (!input) input = graph.input; if (previous) previous.connect(graph.input); previous = graph.output; }
     return input && previous ? { input, output: previous } : null;
   }
-  serialize() { return this.modules.map((module) => module.serialize()); }
+  serialize() {
+    return this.modules.map((module) => ({ ...module.serialize(), name: module.name ?? defaultModuleName(module.type, this.modules) }));
+  }
 }
 
 const MODULE_FACTORIES: Record<string, () => AudioModule> = { gain: () => new GainModule(), eq: () => new EQModule(), compressor: () => new CompressorModule(), saturation: () => new SaturationModule(), clipper: () => new ClipperModule(), limiter: () => new LimiterModule() };
