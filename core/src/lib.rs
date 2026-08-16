@@ -1,20 +1,33 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::slice;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 #[repr(C)]
 pub struct StyloGain {
-    gain_linear: f32,
+    gain_bits: AtomicU32,
 }
 
 impl StyloGain {
     pub const fn new(gain_linear: f32) -> Self {
-        Self { gain_linear }
+        Self { gain_bits: AtomicU32::new(gain_linear.to_bits()) }
     }
 
+    #[inline]
+    pub fn set_gain(&self, gain_linear: f32) {
+        self.gain_bits.store(gain_linear.to_bits(), Ordering::Relaxed);
+    }
+
+    #[inline]
+    pub fn gain(&self) -> f32 {
+        f32::from_bits(self.gain_bits.load(Ordering::Relaxed))
+    }
+
+    #[inline]
     pub fn process(&self, samples: &mut [f32]) {
+        let gain = self.gain();
         for sample in samples {
-            *sample *= self.gain_linear;
+            *sample *= gain;
         }
     }
 }
@@ -31,6 +44,17 @@ pub unsafe extern "C" fn stylo_gain_destroy(handle: *mut StyloGain) {
         // is consumed exactly once here.
         unsafe { drop(Box::from_raw(handle)); }
     }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn stylo_gain_set(handle: *const StyloGain, gain_linear: f32) {
+    if handle.is_null() || !gain_linear.is_finite() || gain_linear < 0.0 {
+        return;
+    }
+
+    // SAFETY: caller supplies a valid handle from stylo_gain_create.
+    let gain = unsafe { &*handle };
+    gain.set_gain(gain_linear);
 }
 
 #[unsafe(no_mangle)]
@@ -61,5 +85,14 @@ mod tests {
         let mut data = [0.25, -0.5, 1.0, 0.0];
         gain.process(&mut data);
         assert_eq!(data, [0.5, -1.0, 2.0, 0.0]);
+    }
+
+    #[test]
+    fn gain_parameter_updates_without_rebuilding_processor() {
+        let gain = StyloGain::new(1.0);
+        gain.set_gain(0.5);
+        let mut data = [1.0, -2.0];
+        gain.process(&mut data);
+        assert_eq!(data, [0.5, -1.0]);
     }
 }
