@@ -1,3 +1,5 @@
+import type { ParameterMap } from './ParameterTypes';
+
 export interface AudioModuleContext {
   audioContext: AudioContext | OfflineAudioContext;
 }
@@ -18,4 +20,5 @@ export interface AudioModule<TParams extends object = any> {
   reset(): void;
   createNode(context: AudioModuleContext): AudioNode | AudioModuleGraph;
   serialize(): { id: string; type: string; enabled: boolean; params: TParams };
+  getParameterDefinitions(): ParameterMap;
 }
