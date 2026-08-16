@@ -7,7 +7,9 @@ export interface AudioModuleGraph {
   output: AudioNode;
 }
 
-export interface AudioModule<TParams extends object = Record<string, unknown>> {
+// Heterogeneous DSP chains need a broad default parameter type.
+// Concrete modules keep their own strongly typed parameter interfaces.
+export interface AudioModule<TParams extends object = any> {
   readonly id: string;
   readonly type: string;
   enabled: boolean;
