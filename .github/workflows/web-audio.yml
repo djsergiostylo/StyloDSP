@@ -15,19 +15,28 @@ jobs:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: web/package.json
+
       - name: Show toolchain
         run: |
           node --version
           npm --version
           npm config get registry
+          node -e "const p=require('./package.json'); console.log(JSON.stringify(p.devDependencies,null,2))"
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund --loglevel verbose
+
       - name: Install Chromium
-        run: npx playwright@1.61.1 install --with-deps chromium
+        run: npx playwright@1.62.0 install --with-deps chromium
+
       - name: Typecheck
         run: npm run typecheck
+
       - name: Tests
         run: npm test -- --reporter=verbose
