@@ -2,6 +2,11 @@ export interface AudioModuleContext {
   audioContext: AudioContext | OfflineAudioContext;
 }
 
+export interface AudioModuleGraph {
+  input: AudioNode;
+  output: AudioNode;
+}
+
 export interface AudioModule<TParams extends Record<string, unknown> = Record<string, unknown>> {
   readonly id: string;
   readonly type: string;
@@ -9,6 +14,6 @@ export interface AudioModule<TParams extends Record<string, unknown> = Record<st
   params: TParams;
   validate(): string[];
   reset(): void;
-  createNode(context: AudioModuleContext): AudioNode;
+  createNode(context: AudioModuleContext): AudioNode | AudioModuleGraph;
   serialize(): { id: string; type: string; enabled: boolean; params: TParams };
 }
