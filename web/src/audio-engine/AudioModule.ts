@@ -14,11 +14,12 @@ export interface AudioModuleGraph {
 export interface AudioModule<TParams extends object = any> {
   readonly id: string;
   readonly type: string;
+  name: string;
   enabled: boolean;
   params: TParams;
   validate(): string[];
   reset(): void;
   createNode(context: AudioModuleContext): AudioNode | AudioModuleGraph;
-  serialize(): { id: string; type: string; enabled: boolean; params: TParams };
+  serialize(): { id: string; type: string; name: string; enabled: boolean; params: TParams };
   getParameterDefinitions(): ParameterMap;
 }
