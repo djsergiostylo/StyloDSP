@@ -39,26 +39,29 @@ export class CompressorModule implements AudioModule<CompressorParams> {
     this.enabled = true;
   }
 
-  createNode({ audioContext }: AudioModuleContext): DynamicsCompressorNode {
-    const node = audioContext.createDynamicsCompressor();
-    node.threshold.value = this.params.thresholdDb;
-    node.knee.value = this.params.kneeDb;
-    node.ratio.value = this.params.ratio;
-    node.attack.value = this.params.attackMs / 1000;
-    node.release.value = this.params.releaseMs / 1000;
+  createNode({ audioContext }: AudioModuleContext): GainNode {
+    const gain = audioContext.createGain();
+    gain.gain.value = this.enabled ? Math.pow(10, this.params.makeupGainDb / 20) : 1;
+    if (!this.enabled) return gain;
 
-    if (!this.enabled) {
-      node.threshold.value = 0;
-      node.knee.value = 0;
-      node.ratio.value = 1;
-      node.attack.value = 0;
-      node.release.value = 0.001;
-    }
+    const compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = this.params.thresholdDb;
+    compressor.knee.value = this.params.kneeDb;
+    compressor.ratio.value = this.params.ratio;
+    compressor.attack.value = this.params.attackMs / 1000;
+    compressor.release.value = this.params.releaseMs / 1000;
+    compressor.connect(gain);
 
-    return node;
+    return createCompositeInput(compressor, gain);
   }
 
   serialize() {
     return { id: this.id, type: this.type, enabled: this.enabled, params: { ...this.params } };
   }
+}
+
+function createCompositeInput(compressor: DynamicsCompressorNode, output: GainNode): GainNode {
+  const input = compressor.context.createGain();
+  input.connect(compressor);
+  return input;
 }
