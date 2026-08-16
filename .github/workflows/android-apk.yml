@@ -6,6 +6,7 @@ on:
     paths:
       - 'android/**'
       - 'core/**'
+      - '.cargo/**'
       - '.github/workflows/android-apk.yml'
 
 concurrency:
@@ -56,6 +57,7 @@ jobs:
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           cp core/target/aarch64-linux-android/release/libstylo_dsp_core.so android/app/src/main/jniLibs/arm64-v8a/
           file android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so
+          readelf -d android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so | grep -F 'SONAME' | grep -F 'libstylo_dsp_core.so'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
@@ -66,9 +68,39 @@ jobs:
         run: gradle -p android :app:assembleDebug --stacktrace
 
       - name: Verify APK
+        shell: bash
         run: |
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          mkdir -p /tmp/stylo-apk-check
+          unzip -q -o "$APK" 'lib/arm64-v8a/*.so' -d /tmp/stylo-apk-check
+
+          BRIDGE=/tmp/stylo-apk-check/lib/arm64-v8a/libstylo_android.so
+          CORE=/tmp/stylo-apk-check/lib/arm64-v8a/libstylo_dsp_core.so
+
+          test -s "$BRIDGE"
+          test -s "$CORE"
+
+          echo '--- Rust Core SONAME ---'
+          readelf -d "$CORE" | grep -F 'SONAME' | grep -F 'libstylo_dsp_core.so'
+
+          echo '--- Android bridge dependencies ---'
+          readelf -d "$BRIDGE" | grep -F 'NEEDED'
+
+          if readelf -d "$BRIDGE" | grep -E 'NEEDED.*(/|\\\\)' | grep -FvE 'NEEDED.*(lib/)?'; then
+            echo 'ERROR: bridge contains an absolute/path-based native dependency.'
+            exit 1
+          fi
+
+          if readelf -d "$BRIDGE" | grep -F '/home/runner/'; then
+            echo 'ERROR: GitHub runner path leaked into native dependency metadata.'
+            exit 1
+          fi
+
+          readelf -d "$BRIDGE" | grep -F 'libstylo_dsp_core.so'
+          echo 'Native dependency verification: PASS'
+          ls -lh "$APK"
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
