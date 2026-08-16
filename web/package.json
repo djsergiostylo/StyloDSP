@@ -1,0 +1,15 @@
+{
+  "name": "stylo-mastering-engine-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --browser.enabled --browser.name=chromium",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@vitest/browser": "^3.2.4",
+    "playwright": "^1.54.2",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
