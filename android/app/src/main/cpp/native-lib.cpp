@@ -9,6 +9,7 @@
 extern "C" {
 void* stylo_gain_create(float gain_linear);
 void stylo_gain_destroy(void* handle);
+void stylo_gain_set(const void* handle, float gain_linear);
 void stylo_gain_process(const void* handle, float* samples, size_t sample_count);
 }
 
@@ -48,9 +49,7 @@ public:
         }
 
         sample_rate_ = static_cast<float>(stream_->getSampleRate());
-        if (sample_rate_ <= 0.0f) {
-            sample_rate_ = 48000.0f;
-        }
+        if (sample_rate_ <= 0.0f) sample_rate_ = 48000.0f;
         phase_ = 0.0f;
 
         result = stream_->requestStart();
@@ -59,7 +58,6 @@ public:
             cleanupLocked();
             return result;
         }
-
         return oboe::Result::OK;
     }
 
@@ -68,24 +66,30 @@ public:
         cleanupLocked();
     }
 
+    void setGainDb(float db) {
+        if (!std::isfinite(db)) return;
+        if (db < -60.0f) db = -60.0f;
+        if (db > 12.0f) db = 12.0f;
+        const float linear = std::pow(10.0f, db / 20.0f);
+        // Rust stores this value atomically. This call performs no allocation or
+        // blocking operation and is safe to invoke while the audio callback runs.
+        stylo_gain_set(gain_, linear);
+    }
+
     oboe::DataCallbackResult onAudioReady(
         oboe::AudioStream* /*audioStream*/, void* audioData, int32_t numFrames) override {
-        if (!audioData || numFrames <= 0 || !gain_) {
-            return oboe::DataCallbackResult::Continue;
-        }
+        if (!audioData || numFrames <= 0 || !gain_) return oboe::DataCallbackResult::Continue;
 
         auto* output = static_cast<float*>(audioData);
         constexpr float frequency = 440.0f;
         constexpr float amplitude = 0.05f;
-        const int32_t channelCount = 2;
+        constexpr int32_t channelCount = 2;
         const float phaseIncrement = 2.0f * static_cast<float>(M_PI) * frequency / sample_rate_;
 
         for (int32_t frame = 0; frame < numFrames; ++frame) {
             const float sample = amplitude * std::sin(phase_);
             phase_ += phaseIncrement;
-            if (phase_ >= 2.0f * static_cast<float>(M_PI)) {
-                phase_ -= 2.0f * static_cast<float>(M_PI);
-            }
+            if (phase_ >= 2.0f * static_cast<float>(M_PI)) phase_ -= 2.0f * static_cast<float>(M_PI);
             output[frame * channelCount] = sample;
             output[frame * channelCount + 1] = sample;
         }
@@ -124,11 +128,15 @@ AudioEngine g_engine;
 
 extern "C" JNIEXPORT jint JNICALL
 Java_com_stylo_dsp_MainActivity_nativeStart(JNIEnv*, jobject) {
-    const oboe::Result result = g_engine.start();
-    return result == oboe::Result::OK ? 0 : static_cast<jint>(result);
+    return g_engine.start() == oboe::Result::OK ? 0 : static_cast<jint>(g_engine.start());
 }
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_stylo_dsp_MainActivity_nativeStop(JNIEnv*, jobject) {
     g_engine.stop();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_stylo_dsp_MainActivity_nativeSetGainDb(JNIEnv*, jobject, jfloat db) {
+    g_engine.setGainDb(db);
 }
