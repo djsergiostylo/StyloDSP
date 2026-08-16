@@ -4,32 +4,24 @@
 //! must own audio I/O and must not leak host APIs into this crate.
 
 /// Simple gain processor using `f32` as the default realtime sample type.
-///
-/// The processor is allocation-free after construction and processes an
-/// existing buffer in place.
 #[derive(Debug, Clone, Copy)]
 pub struct Gain {
     gain_linear: f32,
 }
 
 impl Gain {
-    /// Creates a gain processor from a linear gain value.
     pub const fn new(gain_linear: f32) -> Self {
         Self { gain_linear }
     }
 
-    /// Creates a gain processor from decibels.
     pub fn from_db(db: f32) -> Self {
         Self::new(db_to_linear(db))
     }
 
-    /// Updates the gain. This operation is intended for configuration or a
-    /// host-provided parameter snapshot, not for allocation or blocking work.
     pub fn set_linear(&mut self, gain_linear: f32) {
         self.gain_linear = gain_linear;
     }
 
-    /// Returns the current linear gain.
     pub const fn gain_linear(&self) -> f32 {
         self.gain_linear
     }
@@ -45,6 +37,24 @@ impl Gain {
 /// Converts dB to linear amplitude.
 pub fn db_to_linear(db: f32) -> f32 {
     10.0_f32.powf(db / 20.0)
+}
+
+/// C-compatible realtime entry point used by native host adapters.
+///
+/// Safety: `buffer` must be valid for `len` writable `f32` samples for the
+/// duration of the call. The function performs no allocation or blocking.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn stylo_gain_process(
+    buffer: *mut f32,
+    len: usize,
+    gain_linear: f32,
+) {
+    if buffer.is_null() || len == 0 || !gain_linear.is_finite() {
+        return;
+    }
+
+    let samples = unsafe { core::slice::from_raw_parts_mut(buffer, len) };
+    Gain::new(gain_linear).process(samples);
 }
 
 #[cfg(test)]
