@@ -6,8 +6,11 @@ export interface OfflineRenderOptions {
   channels?: number;
 }
 
+// The chain is intentionally heterogeneous: concrete DSP modules keep their own parameter types.
+type AnyAudioModule = AudioModule<any>;
+
 export class OfflineRenderer {
-  async render(buffer: AudioBuffer, modules: AudioModule[], options: OfflineRenderOptions = {}): Promise<AudioBuffer> {
+  async render(buffer: AudioBuffer, modules: AnyAudioModule[], options: OfflineRenderOptions = {}): Promise<AudioBuffer> {
     const sampleRate = options.sampleRate ?? buffer.sampleRate;
     const channels = options.channels ?? buffer.numberOfChannels;
     if (!Number.isInteger(channels) || channels < 1 || channels > 32) {
