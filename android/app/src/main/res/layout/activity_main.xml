@@ -21,6 +21,21 @@
         android:text="Estado: detenido"
         android:textSize="20sp" />
 
+    <TextView
+        android:id="@+id/gain_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="Gain: 0.0 dB"
+        android:textSize="20sp" />
+
+    <SeekBar
+        android:id="@+id/gain_slider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="83" />
+
     <Button
         android:id="@+id/start_audio"
         android:layout_width="match_parent"
