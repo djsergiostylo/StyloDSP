@@ -24,6 +24,7 @@ jobs:
 
       - name: Show toolchain
         run: |
+          echo "COMMIT=$(git rev-parse HEAD)"
           node --version
           npm --version
           npm config get registry
