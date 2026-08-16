@@ -13,7 +13,7 @@ env:
   ANDROID_API: '26'
   ANDROID_NDK_VERSION: '28.2.13676358'
   ANDROID_PLATFORM: 'android-36'
-  GRADLE_VERSION: '9.3'
+  GRADLE_VERSION: '9.3.1'
 
 jobs:
   build-apk:
