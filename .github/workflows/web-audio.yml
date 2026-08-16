@@ -31,10 +31,10 @@ jobs:
           node --version
           npm --version
           npm config get registry
-          node -e "const p=require('./package.json'); console.log(JSON.stringify(p.devDependencies,null,2))"
+          node -e "const p=require('./package.json'); console.log(JSON.stringify({engines:p.engines,devDependencies:p.devDependencies},null,2))"
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund --loglevel verbose
+        run: npm install --engine-strict --no-audit --no-fund --loglevel verbose
 
       - name: Install Chromium
         run: npm exec -- playwright install --with-deps chromium
