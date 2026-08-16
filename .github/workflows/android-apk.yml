@@ -1,0 +1,77 @@
+name: STYLO Android APK
+
+on:
+  push:
+    paths:
+      - 'core/**'
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+      - 'docs/ARCHITECTURE.md'
+  workflow_dispatch:
+
+env:
+  ANDROID_API: '26'
+  ANDROID_NDK_VERSION: '28.2.13676358'
+  ANDROID_PLATFORM: 'android-36'
+  GRADLE_VERSION: '9.3'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install Android SDK components
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;${ANDROID_NDK_VERSION}" "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/${ANDROID_NDK_VERSION}" >> "$GITHUB_ENV"
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
+      - name: Test Rust Core
+        run: cargo test --manifest-path core/Cargo.toml --all-targets
+
+      - name: Build Rust Core for arm64-v8a
+        run: |
+          rm -rf android/app/src/main/jniLibs
+          cargo ndk -t arm64-v8a -P ${ANDROID_API} -o android/app/src/main/jniLibs build --manifest-path core/Cargo.toml --release
+          test -f android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so
+
+      - name: Download Gradle
+        run: |
+          curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+
+      - name: Build debug APK
+        working-directory: android
+        run: /tmp/gradle-${GRADLE_VERSION}/bin/gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK
+        run: |
+          test -f android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylo-dsp-android-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
