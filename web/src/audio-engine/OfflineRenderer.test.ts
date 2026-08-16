@@ -3,6 +3,7 @@ import { OfflineRenderer } from './OfflineRenderer';
 import { GainModule } from '../dsp/GainModule';
 import { EQModule } from '../dsp/EQModule';
 import { CompressorModule } from '../dsp/CompressorModule';
+import { SaturationModule } from '../dsp/SaturationModule';
 import { validateAudioBuffer } from '../validation/AudioValidation';
 
 function createImpulse(context: OfflineAudioContext): AudioBuffer {
@@ -13,7 +14,7 @@ function createImpulse(context: OfflineAudioContext): AudioBuffer {
 }
 
 describe('STYLO offline mastering pipeline', () => {
-  it('renders a real AudioBuffer through Gain → EQ → Compressor without invalid samples', async () => {
+  it('renders Gain → EQ → Compressor → Saturation without invalid samples', async () => {
     const sourceContext = new OfflineAudioContext(2, 48000, 48000);
     const source = createImpulse(sourceContext);
 
@@ -33,7 +34,13 @@ describe('STYLO offline mastering pipeline', () => {
     compressor.params.releaseMs = 100;
     compressor.params.makeupGainDb = 0;
 
-    const rendered = await new OfflineRenderer().render(source, [gain, eq, compressor]);
+    const saturation = new SaturationModule();
+    saturation.params.curve = 'tanh';
+    saturation.params.driveDb = 6;
+    saturation.params.mix = 1;
+    saturation.params.outputDb = -3;
+
+    const rendered = await new OfflineRenderer().render(source, [gain, eq, compressor, saturation]);
     const report = validateAudioBuffer(rendered);
 
     expect(rendered.numberOfChannels).toBe(2);
