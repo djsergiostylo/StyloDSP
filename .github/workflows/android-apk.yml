@@ -12,6 +12,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   ANDROID_NDK_VERSION: 28.2.13676358
   ANDROID_CMAKE_VERSION: 3.31.6
+  ANDROID_PLATFORM: 36
 
 jobs:
   build-apk:
@@ -28,12 +29,13 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android toolchain
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platforms;android-37" "build-tools;36.0.0" "cmake;${ANDROID_CMAKE_VERSION}" "ndk;${ANDROID_NDK_VERSION}"
+          sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;36.0.0" "cmake;${ANDROID_CMAKE_VERSION}" "ndk;${ANDROID_NDK_VERSION}"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
