@@ -1,4 +1,4 @@
-import type { AudioModule, AudioModuleContext } from '../audio-engine/AudioModule';
+import type { AudioModule, AudioModuleContext, AudioModuleGraph } from '../audio-engine/AudioModule';
 
 export interface CompressorParams {
   thresholdDb: number;
@@ -39,29 +39,29 @@ export class CompressorModule implements AudioModule<CompressorParams> {
     this.enabled = true;
   }
 
-  createNode({ audioContext }: AudioModuleContext): GainNode {
-    const gain = audioContext.createGain();
-    gain.gain.value = this.enabled ? Math.pow(10, this.params.makeupGainDb / 20) : 1;
-    if (!this.enabled) return gain;
-
+  createNode({ audioContext }: AudioModuleContext): AudioModuleGraph {
+    const input = audioContext.createGain();
     const compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = this.params.thresholdDb;
-    compressor.knee.value = this.params.kneeDb;
-    compressor.ratio.value = this.params.ratio;
-    compressor.attack.value = this.params.attackMs / 1000;
-    compressor.release.value = this.params.releaseMs / 1000;
-    compressor.connect(gain);
+    const makeup = audioContext.createGain();
 
-    return createCompositeInput(compressor, gain);
+    if (this.enabled) {
+      compressor.threshold.value = this.params.thresholdDb;
+      compressor.knee.value = this.params.kneeDb;
+      compressor.ratio.value = this.params.ratio;
+      compressor.attack.value = this.params.attackMs / 1000;
+      compressor.release.value = this.params.releaseMs / 1000;
+      makeup.gain.value = Math.pow(10, this.params.makeupGainDb / 20);
+    } else {
+      compressor.ratio.value = 1;
+      makeup.gain.value = 1;
+    }
+
+    input.connect(compressor);
+    compressor.connect(makeup);
+    return { input, output: makeup };
   }
 
   serialize() {
     return { id: this.id, type: this.type, enabled: this.enabled, params: { ...this.params } };
   }
-}
-
-function createCompositeInput(compressor: DynamicsCompressorNode, output: GainNode): GainNode {
-  const input = compressor.context.createGain();
-  input.connect(compressor);
-  return input;
 }
