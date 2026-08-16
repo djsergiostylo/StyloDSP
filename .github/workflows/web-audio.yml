@@ -33,7 +33,7 @@ jobs:
         run: npm install --no-audit --no-fund --loglevel verbose
 
       - name: Install Chromium
-        run: npx playwright@1.62.0 install --with-deps chromium
+        run: npm exec -- playwright install --with-deps chromium
 
       - name: Typecheck
         run: npm run typecheck
