@@ -1,0 +1,14 @@
+[package]
+name = "stylo-dsp-core"
+version = "0.1.0"
+edition = "2021"
+description = "Platform-independent STYLO DSP core"
+license = "UNLICENSED"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = []
+
+[dev-dependencies]
