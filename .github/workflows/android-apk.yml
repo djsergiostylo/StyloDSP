@@ -8,14 +8,15 @@ on:
       - 'core/**'
       - '.github/workflows/android-apk.yml'
 
+concurrency:
+  group: stylo-android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   ANDROID_NDK_VERSION: 28.2.13676358
   ANDROID_CMAKE_VERSION: 3.31.6
   ANDROID_PLATFORM: 36
-
-auto_cancel:
-  enabled: true
 
 jobs:
   build-apk:
