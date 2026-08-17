@@ -5,3 +5,12 @@ edition = "2021"
 
 [lib]
 crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+# Low-level, allocation-free PCM/DSP fundamentals. Kept optional until a
+# primitive is migrated into the realtime path and benchmarked on ARM64.
+dasp = { version = "0.11", default-features = false, optional = true }
+
+[features]
+default = []
+dsp-primitives = ["dep:dasp"]
