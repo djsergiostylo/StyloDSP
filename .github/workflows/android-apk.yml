@@ -1,4 +1,4 @@
-name: STYLO Android APK
+name: STYLO Android Release
 
 on:
   workflow_dispatch:
@@ -8,14 +8,14 @@ on:
       - '.github/workflows/android-apk.yml'
 
 concurrency:
-  group: stylo-android-apk-${{ github.ref }}
+  group: stylo-android-release-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   ANDROID_PLATFORM: 35
 
 jobs:
-  build-apk:
+  build-android:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -38,18 +38,37 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Compile and test
+        run: gradle -p android :app:compileDebugKotlin :app:testDebugUnitTest --stacktrace
+
       - name: Build debug APK
         run: gradle -p android :app:assembleDebug --stacktrace
 
-      - name: Verify APK
-        run: |
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
-          file android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build release APK
+        run: gradle -p android :app:assembleRelease --stacktrace
 
-      - name: Upload APK
+      - name: Build release AAB
+        run: gradle -p android :app:bundleRelease --stacktrace
+
+      - name: Verify release outputs
+        run: |
+          set -e
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s android/app/build/outputs/bundle/release/app-release.aab
+          file android/app/build/outputs/apk/debug/app-debug.apk
+          file android/app/build/outputs/apk/release/app-release-unsigned.apk
+          file android/app/build/outputs/bundle/release/app-release.aab
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/release/app-release-unsigned.apk
+          ls -lh android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: stylo-dsp-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: stylo-eq-release-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
