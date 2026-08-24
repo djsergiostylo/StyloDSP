@@ -20,10 +20,18 @@ import org.json.JSONObject
 import kotlin.math.exp
 import kotlin.math.ln
 import kotlin.math.min
+import kotlin.math.sqrt
 
 class MainActivity : Activity() {
     private lateinit var graph: EqGraphView
     private lateinit var player: PcmPlayerEngine
+    private lateinit var seekBar: SeekBar
+    private lateinit var timeView: TextView
+    private lateinit var fileView: TextView
+    private lateinit var playButton: Button
+    private lateinit var loopButton: Button
+    private lateinit var abButton: Button
+
     private var playing = false
     private var duration = 0
     private var position = 0
@@ -32,82 +40,432 @@ class MainActivity : Activity() {
     private var loop = false
     private var fileLabel = "Sin archivo"
     private val prefs by lazy { getSharedPreferences("stylo_eq", MODE_PRIVATE) }
-    private val graphicFreqs = doubleArrayOf(20,25,31.5,40,50,63,80,100,125,160,200,250,315,400,500,630,800,1000,1250,1600,2000,2500,3150,4000,5000,6300,8000,10000,12500,16000,20000)
-    private val graphicBands = graphicFreqs.map { EqBand(it,0.0,1.0,FilterType.PEAK) }.toMutableList()
-    private val paramBands = MutableList(8) { i -> EqBand(graphicFreqs[i+12],0.0,1.0,FilterType.PEAK) }
+    private val graphicFreqs = doubleArrayOf(20.0,25.0,31.5,40.0,50.0,63.0,80.0,100.0,125.0,160.0,200.0,250.0,315.0,400.0,500.0,630.0,800.0,1000.0,1250.0,1600.0,2000.0,2500.0,3150.0,4000.0,5000.0,6300.0,8000.0,10000.0,12500.0,16000.0,20000.0)
+    private val graphicBands = graphicFreqs.map { EqBand(it, 0.0) }.toMutableList()
+    private val paramBands = MutableList(8) { index -> EqBand(graphicFreqs[index + 12], 0.0) }
     private var abSnapshot: List<EqBand>? = null
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         player = PcmPlayerEngine(this,
-            onState = { pos,dur,isPlaying ->
-                position=pos; duration=dur; playing=isPlaying
+            onState = { pos, dur, isPlaying ->
+                position = pos
+                duration = dur
+                playing = isPlaying
                 runOnUiThread { refreshTransport() }
             },
-            onSpectrum = { spectrum -> runOnUiThread { graph.setSpectrum(spectrum) } }
+            onSpectrum = { spectrum -> runOnUiThread { if (::graph.isInitialized) graph.setSpectrum(spectrum) } }
         )
         buildUi()
         applyDsp()
     }
 
     private fun buildUi() {
-        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(Color.rgb(8,10,12));setPadding(10,8,10,8)}
-        graph=EqGraphView(); root.addView(graph,LinearLayout.LayoutParams(-1,0,1f))
-        val file=TextView(this).apply{text=fileLabel;setTextColor(0xffaebbc2.toInt());textSize=12f;maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.MIDDLE;gravity=Gravity.CENTER_VERTICAL;setPadding(8,2,8,2)};root.addView(file,LinearLayout.LayoutParams(-1,32));fileView=file
-        val seek=SeekBar(this).apply{max=1000;setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{override fun onProgressChanged(s:SeekBar?,p:Int,fromUser:Boolean){if(fromUser&&duration>0){position=duration*p/1000;player.seekTo(position);graph.invalidate()}};override fun onStartTrackingTouch(s:SeekBar?){ };override fun onStopTrackingTouch(s:SeekBar?){ }})};root.addView(seek,LinearLayout.LayoutParams(-1,38));seekBar=seek
-        val time=TextView(this).apply{text="00:00 / 00:00";setTextColor(0xff83939b.toInt());textSize=11f;gravity=Gravity.CENTER};root.addView(time,LinearLayout.LayoutParams(-1,24));timeView=time
-        fun row()=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(0,3,0,3)}
-        fun btn(label:String,action:()->Unit)=Button(this).apply{text=label;textSize=11f;isAllCaps=false;minHeight=48;minWidth=0;setPadding(3,0,3,0);setOnClickListener{action()}}
-        fun addRow(r:LinearLayout,vararg bs:Button){bs.forEach{r.addView(it,LinearLayout.LayoutParams(0,52,1f).apply{setMargins(3,0,3,0)})};root.addView(r)}
-        val transport=row();val open=btn("📂"){pickAudio()};val back=btn("⏮ 10s"){player.seekBy(-10000)};val play=btn("▶ PLAY"){player.playPause()};val fwd=btn("10s ⏭"){player.seekBy(10000)};val loopBtn=btn("↻ LOOP"){loop=!loop;player.setLoop(loop);loopBtn.text=if(loop)"↻ LOOP ON" else "↻ LOOP"};addRow(transport,open,back,play,fwd,loopBtn);playButton=play
-        val modes=row();val graphic=btn("31 BAND"){graph.mode=0;graph.invalidate()};val param=btn("PARAM 8"){graph.mode=1;graph.invalidate()};val type=btn("TYPE"){graph.cycleType()};val bypassBtn=btn("BYPASS"){bypass=!bypass;player.setBypass(bypass);graph.invalidate()};val abBtn=btn("A / B"){toggleAB();abBtn.text=if(ab)"A / B: B" else "A / B: A"};addRow(modes,graphic,param,type,bypassBtn,abBtn)
-        val utility=row();val save=btn("SAVE"){savePreset()};val load=btn("LOAD"){loadPreset()};val flat=btn("FLAT"){flatten()};val reset=btn("RESET"){resetSelected()};val prev=btn("◀ BAND"){graph.selected=(graph.selected-1).coerceAtLeast(0);graph.invalidate()};val next=btn("BAND ▶"){graph.selected=(graph.selected+1).coerceAtMost(if(graph.mode==0)30 else 7);graph.invalidate()};addRow(utility,save,load,flat,reset,prev,next)
-        val volumeRow=row();val label=TextView(this).apply{text="VOL";setTextColor(0xffaebbc2.toInt());gravity=Gravity.CENTER};val volume=SeekBar(this).apply{max=100;progress=100;setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{override fun onProgressChanged(s:SeekBar?,p:Int,fromUser:Boolean){player.setVolume(p/100f)};override fun onStartTrackingTouch(s:SeekBar?){ };override fun onStopTrackingTouch(s:SeekBar?){ }})};volumeRow.addView(label,LinearLayout.LayoutParams(48,44));volumeRow.addView(volume,LinearLayout.LayoutParams(0,44,1f));root.addView(volumeRow);setContentView(root)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.rgb(8, 10, 12))
+            setPadding(8, 6, 8, 6)
+        }
+        graph = EqGraphView()
+        root.addView(graph, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        fileView = TextView(this).apply {
+            text = fileLabel
+            setTextColor(0xffaebbc2.toInt())
+            textSize = 12f
+            maxLines = 1
+            ellipsize = android.text.TextUtils.TruncateAt.MIDDLE
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(8, 0, 8, 0)
+        }
+        root.addView(fileView, LinearLayout.LayoutParams(-1, 30))
+
+        seekBar = SeekBar(this).apply {
+            max = 1000
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar?, progress: Int, fromUser: Boolean) {
+                    if (fromUser && duration > 0) player.seekTo(duration * progress / 1000)
+                }
+                override fun onStartTrackingTouch(s: SeekBar?) {}
+                override fun onStopTrackingTouch(s: SeekBar?) {}
+            })
+        }
+        root.addView(seekBar, LinearLayout.LayoutParams(-1, 34))
+
+        timeView = TextView(this).apply {
+            text = "00:00 / 00:00"
+            setTextColor(0xff83939b.toInt())
+            textSize = 11f
+            gravity = Gravity.CENTER
+        }
+        root.addView(timeView, LinearLayout.LayoutParams(-1, 22))
+
+        fun row(): LinearLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(0, 2, 0, 2)
+        }
+        fun button(label: String, action: () -> Unit): Button = Button(this).apply {
+            text = label
+            textSize = 10f
+            isAllCaps = false
+            minHeight = 44
+            minWidth = 0
+            setPadding(1, 0, 1, 0)
+            setOnClickListener { action() }
+        }
+        fun addButtons(r: LinearLayout, buttons: List<Button>) {
+            buttons.forEach { b ->
+                r.addView(b, LinearLayout.LayoutParams(0, 48, 1f).apply { setMargins(2, 0, 2, 0) })
+            }
+            root.addView(r)
+        }
+
+        val transport = row()
+        val openButton = button("📂 OPEN") { pickAudio() }
+        val backButton = button("⏮ 10s") { player.seekBy(-10_000) }
+        playButton = button("▶ PLAY") { player.playPause() }
+        val forwardButton = button("10s ⏭") { player.seekBy(10_000) }
+        loopButton = button("↻ LOOP") {
+            loop = !loop
+            player.setLoop(loop)
+            loopButton.text = if (loop) "↻ LOOP ON" else "↻ LOOP"
+        }
+        addButtons(transport, listOf(openButton, backButton, playButton, forwardButton, loopButton))
+
+        val modes = row()
+        val graphicButton = button("31 BAND") { graph.mode = 0; graph.invalidate() }
+        val paramButton = button("PARAM 8") { graph.mode = 1; graph.selected = graph.selected.coerceIn(0, 7); graph.invalidate() }
+        val typeButton = button("TYPE") { graph.cycleType() }
+        val bypassButton = button("BYPASS") {
+            bypass = !bypass
+            player.setBypass(bypass)
+            graph.invalidate()
+        }
+        abButton = button("A / B: A") { toggleAB() }
+        addButtons(modes, listOf(graphicButton, paramButton, typeButton, bypassButton, abButton))
+
+        val utility = row()
+        val saveButton = button("SAVE") { savePreset() }
+        val loadButton = button("LOAD") { loadPreset() }
+        val flatButton = button("FLAT") { flatten() }
+        val resetButton = button("RESET") { resetSelected() }
+        val previousButton = button("◀ BAND") { graph.selected = (graph.selected - 1).coerceAtLeast(0); graph.invalidate() }
+        val nextButton = button("BAND ▶") {
+            val maxIndex = if (graph.mode == 0) 30 else 7
+            graph.selected = (graph.selected + 1).coerceAtMost(maxIndex)
+            graph.invalidate()
+        }
+        addButtons(utility, listOf(saveButton, loadButton, flatButton, resetButton, previousButton, nextButton))
+
+        val volumeRow = row()
+        val volumeLabel = TextView(this).apply {
+            text = "VOL"
+            setTextColor(0xffaebbc2.toInt())
+            gravity = Gravity.CENTER
+        }
+        volumeRow.addView(volumeLabel, LinearLayout.LayoutParams(42, 44))
+        val volume = SeekBar(this).apply {
+            max = 100
+            progress = 100
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar?, progress: Int, fromUser: Boolean) { player.setVolume(progress / 100f) }
+                override fun onStartTrackingTouch(s: SeekBar?) {}
+                override fun onStopTrackingTouch(s: SeekBar?) {}
+            })
+        }
+        volumeRow.addView(volume, LinearLayout.LayoutParams(0, 44, 1f))
+        root.addView(volumeRow)
+        setContentView(root)
     }
 
-    private lateinit var seekBar:SeekBar
-    private lateinit var timeView:TextView
-    private lateinit var fileView:TextView
-    private lateinit var playButton:Button
-
-    private fun refreshTransport(){if(duration>0)seekBar.progress=(position*1000/duration).coerceIn(0,1000);timeView.text="${fmt(position)} / ${fmt(duration)}";playButton.text=if(playing)"⏸ PAUSE" else "▶ PLAY";graph.invalidate()}
-    private fun fmt(ms:Int):String{val s=(ms/1000).coerceAtLeast(0);return "%02d:%02d".format(s/60,s%60)}
-    private fun pickAudio(){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="audio/*";addCategory(Intent.CATEGORY_OPENABLE)},REQUEST_FILE)}
-    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){super.onActivityResult(requestCode,resultCode,data);if(requestCode==REQUEST_FILE&&resultCode==RESULT_OK)data?.data?.let{uri->runCatching{contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION);player.load(uri);fileLabel=uri.lastPathSegment?:"Audio";fileView.text=fileLabel}.onFailure{Toast.makeText(this,"No se pudo abrir el audio",Toast.LENGTH_LONG).show()}}}
-    private fun applyDsp(){player.setBands((graphicBands+paramBands).map{it.copy(enabled=it.enabled&&!bypass)});player.setBypass(bypass)}
-    private fun selectedBand():EqBand=if(graph.mode==0)graphicBands[graph.selected]else paramBands[graph.selected.coerceIn(0,7)]
-    private fun resetSelected(){selectedBand().apply{gainDb=0.0;q=1.0;type=FilterType.PEAK;enabled=true};applyDsp();graph.invalidate()}
-    private fun flatten(){(graphicBands+paramBands).forEach{it.gainDb=0.0};applyDsp();graph.invalidate()}
-    private fun savePreset(){fun enc(list:List<EqBand>)=JSONArray().also{a->list.forEach{b->a.put(JSONObject().apply{put("f",b.frequency);put("g",b.gainDb);put("q",b.q);put("t",b.type.name);put("e",b.enabled)})}};prefs.edit().putString("preset",JSONObject().apply{put("graphic",enc(graphicBands));put("param",enc(paramBands))}.toString()).apply();Toast.makeText(this,"Preset guardado",Toast.LENGTH_SHORT).show()}
-    private fun loadPreset(){val raw=prefs.getString("preset",null)?:return;runCatching{val root=JSONObject(raw);fun dec(a:JSONArray,list:List<EqBand>){for(i in 0 until min(a.length(),list.size)){val o=a.getJSONObject(i);val b=list[i];b.frequency=o.optDouble("f",b.frequency);b.gainDb=o.optDouble("g",0.0);b.q=o.optDouble("q",1.0);b.type=runCatching{FilterType.valueOf(o.optString("t","PEAK"))}.getOrDefault(FilterType.PEAK);b.enabled=o.optBoolean("e",true)}};dec(root.optJSONArray("graphic")?:JSONArray(),graphicBands);dec(root.optJSONArray("param")?:JSONArray(),paramBands);applyDsp();graph.invalidate();Toast.makeText(this,"Preset cargado",Toast.LENGTH_SHORT).show()}}
-    private fun toggleAB(){if(!ab){abSnapshot=(graphicBands+paramBands).map{it.copy()};(graphicBands+paramBands).forEach{it.gainDb=0.0}}else{abSnapshot?.forEachIndexed{i,b->(graphicBands+paramBands).getOrNull(i)?.apply{frequency=b.frequency;gainDb=b.gainDb;q=b.q;type=b.type;enabled=b.enabled}}};ab=!ab;applyDsp();graph.invalidate()}
-
-    override fun onDestroy(){player.release();super.onDestroy()}
-
-    private inner class EqGraphView:View(this@MainActivity){
-        private val p=Paint(Paint.ANTI_ALIAS_FLAG)
-        private var spectrum=FloatArray(1024)
-        var mode=0
-        var selected=17
-        private var dragging=false
-        private var qStart=1.0
-        private var qY=0f
-        private var graphScale=1f
-        private var lastPinch=0f
-        private val spectrumPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=2f;color=0xff35d9ff.toInt()}
-        private val curvePaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=3f;color=0xffffb84d.toInt()}
-        private val gridPaint=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=1f;color=0x333b4d56}
-        fun setSpectrum(v:FloatArray){spectrum=v;postInvalidateOnAnimation()}
-        private fun xFreq(x:Float,w:Float)=20.0*exp(ln(1000.0)*x/(w.coerceAtLeast(1f)))
-        private fun fX(f:Double,w:Float)=(ln(f/20.0)/ln(1000.0)*w).toFloat()
-        private fun gainY(g:Double,h:Float)=h*.43f-(g/24.0*h*.32f)
-        private fun yGain(y:Float,h:Float)=((h*.43f-y)/(h*.32f)*24.0).coerceIn(-24.0,24.0)
-        private fun text(c:Canvas,s:String,x:Float,y:Float,size:Float){p.style=Paint.Style.FILL;p.color=0xffaebbc2.toInt();p.textSize=size;c.drawText(s,x,y,p)}
-        override fun onDraw(c:Canvas){val w=width.toFloat();val h=height.toFloat();c.drawColor(0xff080a0c.toInt());for(i in 0..8){val y=h*(.08f+i*.84f/8f);c.drawLine(0f,y,w,y,gridPaint)};for(f in doubleArrayOf(20.0,50.0,100.0,200.0,500.0,1000.0,2000.0,5000.0,10000.0,20000.0)){val x=fX(f,w);c.drawLine(x,h*.06f,x,h*.92f,gridPaint);text(c,if(f>=1000)"${(f/1000).toInt()}k" else "${f.toInt()}",x-10,h-6,10f)};p.color=0xff7d8790.toInt();p.textSize=10f;c.drawText("+24 dB",5f,h*.10f,p);c.drawText("0 dB",5f,h*.43f,p);c.drawText("-24 dB",5f,h*.76f,p);spectrumPaint.strokeWidth=2f*graphScale;val path=Path();var started=false;for(i in 1 until spectrum.size){val f=i.toDouble()/spectrum.size*22050.0;if(f<20||f>20000)continue;val x=fX(f,w);val db=spectrum[i].coerceIn(-90f,0f);val y=h*.9f-(db+90f)/90f*h*.78f;if(!started){path.moveTo(x,y);started=true}else path.lineTo(x,y)};c.drawPath(path,spectrumPaint);val bands=if(mode==0)graphicBands else paramBands;bands.forEachIndexed{i,b->val x=fX(b.frequency,w);val y=gainY(b.gainDb,h);p.style=Paint.Style.FILL;p.color=if(i==selected)0xffff5c8a.toInt() else 0xff4fe3c1.toInt();c.drawCircle(x,y,if(i==selected)11f else 7f,p)};if(mode==1){val b=paramBands[selected];curvePaint.strokeWidth=2.5f*graphScale;val curve=Path();for(xi in 0..w.toInt() step 8){val f=xFreq(xi.toFloat(),w);val z=ln(f/b.frequency)/ln(2.0);val d=exp(-0.5*(z*b.q)*(z*b.q));val y=gainY(b.gainDb*d,h);if(xi==0)curve.moveTo(0f,y)else curve.lineTo(xi.toFloat(),y)};c.drawPath(curvePaint.apply{color=0xffffb84d.toInt()},curve)};text(c,"STYLO EQ",14f,24f,16f);val b=selectedBand();text(c,"${b.frequency.toInt()} Hz   ${if(b.gainDb>=0)"+" else ""}${"%.1f".format(b.gainDb)} dB   Q ${"%.2f".format(b.q)}   ${b.type.name}",14f,46f,12f);text(c,if(mode==0)"31-BAND GRAPHIC" else "PARAMETRIC 8",w-145f,24f,10f);if(bypass)text(c,"BYPASS",w-65f,46f,10f)}
-        override fun onTouchEvent(e:MotionEvent):Boolean{val w=width.toFloat();val h=height.toFloat();when(e.actionMasked){MotionEvent.ACTION_DOWN->{selected=nearest(e.x,e.y,w,h);dragging=true;qStart=selectedBand().q;qY=e.y;invalidate();return true};MotionEvent.ACTION_POINTER_DOWN->{if(e.pointerCount>=2)lastPinch=distance(e);return true};MotionEvent.ACTION_MOVE->{if(e.pointerCount>=2){val d=distance(e);if(lastPinch>0){graphScale=(graphScale+d/lastPinch*.35f).coerceIn(.7f,1.8f)};lastPinch=d;postInvalidateOnAnimation();return true};if(dragging){val b=selectedBand();b.frequency=xFreq(e.x.coerceIn(0f,w),w).coerceIn(20.0,20000.0);b.gainDb=yGain(e.y,h);applyDsp();postInvalidateOnAnimation()};return true};MotionEvent.ACTION_POINTER_UP->{lastPinch=0f;return true};MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{dragging=false;lastPinch=0f;return true}};return true}
-        private fun distance(e:MotionEvent):Float{if(e.pointerCount<2)return 0f;val dx=e.getX(0)-e.getX(1);val dy=e.getY(0)-e.getY(1);return kotlin.math.sqrt(dx*dx+dy*dy)}
-        private fun nearest(x:Float,y:Float,w:Float,h:Float):Int{val bands=if(mode==0)graphicBands else paramBands;var best=0;var dist=Float.MAX_VALUE;bands.forEachIndexed{i,b->{val dx=fX(b.frequency,w)-x;val dy=gainY(b.gainDb,h)-y;val d=dx*dx+dy*dy;if(d<dist){dist=d;best=i}}};return best}
-        fun cycleType(){val b=selectedBand();b.type=FilterType.values()[(b.type.ordinal+1)%FilterType.values().size];applyDsp();invalidate()}
+    private fun refreshTransport() {
+        if (duration > 0) seekBar.progress = (position * 1000 / duration).coerceIn(0, 1000)
+        timeView.text = "${fmt(position)} / ${fmt(duration)}"
+        playButton.text = if (playing) "⏸ PAUSE" else "▶ PLAY"
+        graph.invalidate()
     }
-    companion object{private const val REQUEST_FILE=701}
+
+    private fun fmt(ms: Int): String {
+        val seconds = (ms / 1000).coerceAtLeast(0)
+        return "%02d:%02d".format(seconds / 60, seconds % 60)
+    }
+
+    private fun pickAudio() {
+        startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            type = "audio/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
+        }, REQUEST_FILE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_FILE || resultCode != RESULT_OK) return
+        data?.data?.let { uri ->
+            runCatching {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                player.load(uri)
+                fileLabel = uri.lastPathSegment ?: "Audio"
+                fileView.text = fileLabel
+            }.onFailure {
+                Toast.makeText(this, "No se pudo abrir el audio", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun allBands(): List<EqBand> = graphicBands + paramBands
+
+    private fun applyDsp() {
+        player.setBands(allBands().map { it.copy(enabled = it.enabled && !bypass) })
+        player.setBypass(bypass)
+    }
+
+    private fun selectedBand(): EqBand = if (graph.mode == 0) {
+        graphicBands[graph.selected.coerceIn(0, graphicBands.lastIndex)]
+    } else {
+        paramBands[graph.selected.coerceIn(0, paramBands.lastIndex)]
+    }
+
+    private fun resetSelected() {
+        selectedBand().apply { gainDb = 0.0; q = 1.0; type = FilterType.PEAK; enabled = true }
+        applyDsp()
+        graph.invalidate()
+    }
+
+    private fun flatten() {
+        allBands().forEach { it.gainDb = 0.0 }
+        applyDsp()
+        graph.invalidate()
+    }
+
+    private fun savePreset() {
+        fun encode(list: List<EqBand>): JSONArray = JSONArray().apply {
+            list.forEach { band ->
+                put(JSONObject().apply {
+                    put("f", band.frequency)
+                    put("g", band.gainDb)
+                    put("q", band.q)
+                    put("t", band.type.name)
+                    put("e", band.enabled)
+                })
+            }
+        }
+        val root = JSONObject().apply {
+            put("graphic", encode(graphicBands))
+            put("param", encode(paramBands))
+        }
+        prefs.edit().putString("preset", root.toString()).apply()
+        Toast.makeText(this, "Preset guardado", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun loadPreset() {
+        val raw = prefs.getString("preset", null) ?: return
+        runCatching {
+            val root = JSONObject(raw)
+            fun decode(array: JSONArray?, list: List<EqBand>) {
+                if (array == null) return
+                for (i in 0 until min(array.length(), list.size)) {
+                    val obj = array.getJSONObject(i)
+                    val band = list[i]
+                    band.frequency = obj.optDouble("f", band.frequency)
+                    band.gainDb = obj.optDouble("g", 0.0)
+                    band.q = obj.optDouble("q", 1.0)
+                    band.type = runCatching { FilterType.valueOf(obj.optString("t", "PEAK")) }.getOrDefault(FilterType.PEAK)
+                    band.enabled = obj.optBoolean("e", true)
+                }
+            }
+            decode(root.optJSONArray("graphic"), graphicBands)
+            decode(root.optJSONArray("param"), paramBands)
+            applyDsp()
+            graph.invalidate()
+            Toast.makeText(this, "Preset cargado", Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(this, "Preset no válido", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun toggleAB() {
+        if (!ab) {
+            abSnapshot = allBands().map { it.copy() }
+            allBands().forEach { it.gainDb = 0.0 }
+            ab = true
+            abButton.text = "A / B: B"
+        } else {
+            abSnapshot?.forEachIndexed { index, band ->
+                allBands().getOrNull(index)?.apply {
+                    frequency = band.frequency; gainDb = band.gainDb; q = band.q; type = band.type; enabled = band.enabled
+                }
+            }
+            ab = false
+            abButton.text = "A / B: A"
+        }
+        applyDsp()
+        graph.invalidate()
+    }
+
+    override fun onDestroy() {
+        player.release()
+        super.onDestroy()
+    }
+
+    private inner class EqGraphView : View(this@MainActivity) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val spectrumPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2f; color = 0xff35d9ff.toInt() }
+        private val curvePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 2.5f; color = 0xffffb84d.toInt() }
+        private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1f; color = 0x333b4d56 }
+        private var spectrum = FloatArray(1024)
+        var mode = 0
+        var selected = 17
+        private var dragging = false
+        private var graphScale = 1f
+        private var lastPinch = 0f
+
+        fun setSpectrum(value: FloatArray) { spectrum = value; postInvalidateOnAnimation() }
+
+        private fun xToFreq(x: Float, width: Float): Double = 20.0 * exp(ln(1000.0) * x / width.coerceAtLeast(1f))
+        private fun freqToX(freq: Double, width: Float): Float = (ln(freq / 20.0) / ln(1000.0) * width).toFloat()
+        private fun gainToY(gain: Double, height: Float): Float = height * 0.43f - (gain / 24.0 * height * 0.32f)
+        private fun yToGain(y: Float, height: Float): Double = ((height * 0.43f - y) / (height * 0.32f) * 24.0).coerceIn(-24.0, 24.0)
+
+        override fun onDraw(canvas: Canvas) {
+            val width = width.toFloat()
+            val height = height.toFloat()
+            canvas.drawColor(0xff080a0c.toInt())
+            for (i in 0..8) {
+                val y = height * (0.08f + i * 0.84f / 8f)
+                canvas.drawLine(0f, y, width, y, gridPaint)
+            }
+            val gridFreqs = doubleArrayOf(20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0, 20000.0)
+            gridFreqs.forEach { frequency ->
+                val x = freqToX(frequency, width)
+                canvas.drawLine(x, height * 0.06f, x, height * 0.92f, gridPaint)
+                val label = if (frequency >= 1000.0) "${(frequency / 1000.0).toInt()}k" else frequency.toInt().toString()
+                drawText(canvas, label, x - 10f, height - 6f, 10f)
+            }
+            paint.color = 0xff7d8790.toInt(); paint.textSize = 10f
+            canvas.drawText("+24 dB", 5f, height * 0.10f, paint)
+            canvas.drawText("0 dB", 5f, height * 0.43f, paint)
+            canvas.drawText("-24 dB", 5f, height * 0.76f, paint)
+
+            spectrumPaint.strokeWidth = 2f * graphScale
+            val spectrumPath = Path()
+            var started = false
+            for (i in 1 until spectrum.size) {
+                val frequency = i.toDouble() / spectrum.size.toDouble() * 22050.0
+                if (frequency < 20.0 || frequency > 20000.0) continue
+                val x = freqToX(frequency, width)
+                val db = spectrum[i].coerceIn(-90f, 0f)
+                val y = height * 0.9f - (db + 90f) / 90f * height * 0.78f
+                if (!started) { spectrumPath.moveTo(x, y); started = true } else spectrumPath.lineTo(x, y)
+            }
+            canvas.drawPath(spectrumPath, spectrumPaint)
+
+            val bands = if (mode == 0) graphicBands else paramBands
+            bands.forEachIndexed { index, band ->
+                val x = freqToX(band.frequency, width)
+                val y = gainToY(band.gainDb, height)
+                paint.style = Paint.Style.FILL
+                paint.color = if (index == selected) 0xffff5c8a.toInt() else 0xff4fe3c1.toInt()
+                canvas.drawCircle(x, y, if (index == selected) 11f else 7f, paint)
+            }
+
+            if (mode == 1) {
+                val band = paramBands[selected.coerceIn(0, paramBands.lastIndex)]
+                val curve = Path()
+                var first = true
+                var x = 0
+                while (x <= width.toInt()) {
+                    val frequency = xToFreq(x.toFloat(), width)
+                    val z = ln(frequency / band.frequency) / ln(2.0)
+                    val response = exp(-0.5 * (z * band.q) * (z * band.q))
+                    val y = gainToY(band.gainDb * response, height)
+                    if (first) { curve.moveTo(x.toFloat(), y); first = false } else curve.lineTo(x.toFloat(), y)
+                    x += 8
+                }
+                canvas.drawPath(curve, curvePaint)
+            }
+
+            drawText(canvas, "STYLO EQ", 14f, 24f, 16f)
+            val band = selectedBand()
+            val gain = if (band.gainDb >= 0) "+%.1f".format(band.gainDb) else "%.1f".format(band.gainDb)
+            drawText(canvas, "${band.frequency.toInt()} Hz   $gain dB   Q ${"%.2f".format(band.q)}   ${band.type.name}", 14f, 46f, 12f)
+            drawText(canvas, if (mode == 0) "31-BAND GRAPHIC" else "PARAMETRIC 8", width - 145f, 24f, 10f)
+            if (bypass) drawText(canvas, "BYPASS", width - 65f, 46f, 10f)
+        }
+
+        private fun drawText(canvas: Canvas, text: String, x: Float, y: Float, size: Float) {
+            paint.style = Paint.Style.FILL
+            paint.color = 0xffaebbc2.toInt()
+            paint.textSize = size
+            canvas.drawText(text, x, y, paint)
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            val width = width.toFloat()
+            val height = height.toFloat()
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    selected = nearest(event.x, event.y, width, height)
+                    dragging = true
+                    invalidate()
+                    return true
+                }
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    if (event.pointerCount >= 2) lastPinch = distance(event)
+                    return true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (event.pointerCount >= 2) {
+                        val distance = distance(event)
+                        if (lastPinch > 0f) graphScale = (graphScale * (distance / lastPinch)).coerceIn(0.7f, 1.8f)
+                        lastPinch = distance
+                        postInvalidateOnAnimation()
+                        return true
+                    }
+                    if (dragging) {
+                        val band = selectedBand()
+                        band.frequency = xToFreq(event.x.coerceIn(0f, width), width).coerceIn(20.0, 20000.0)
+                        band.gainDb = yToGain(event.y, height)
+                        applyDsp()
+                        postInvalidateOnAnimation()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_POINTER_UP -> { lastPinch = 0f; return true }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> { dragging = false; lastPinch = 0f; return true }
+            }
+            return true
+        }
+
+        private fun distance(event: MotionEvent): Float {
+            if (event.pointerCount < 2) return 0f
+            val dx = event.getX(0) - event.getX(1)
+            val dy = event.getY(0) - event.getY(1)
+            return sqrt(dx * dx + dy * dy)
+        }
+
+        private fun nearest(x: Float, y: Float, width: Float, height: Float): Int {
+            val bands = if (mode == 0) graphicBands else paramBands
+            var best = 0
+            var bestDistance = Float.MAX_VALUE
+            bands.forEachIndexed { index, band ->
+                val dx = freqToX(band.frequency, width) - x
+                val dy = gainToY(band.gainDb, height) - y
+                val distance = dx * dx + dy * dy
+                if (distance < bestDistance) { bestDistance = distance; best = index }
+            }
+            return best
+        }
+
+        fun cycleType() {
+            val band = selectedBand()
+            val values = FilterType.values()
+            band.type = values[(band.type.ordinal + 1) % values.size]
+            applyDsp()
+            invalidate()
+        }
+    }
+
+    companion object { private const val REQUEST_FILE = 701 }
 }
