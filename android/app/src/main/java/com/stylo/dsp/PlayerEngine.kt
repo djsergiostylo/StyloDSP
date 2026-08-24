@@ -20,7 +20,6 @@ class PlayerEngine(private val context: Context, private val onState: (positionM
             }
         }
     }
-
     fun load(uri: Uri) {
         release()
         player = MediaPlayer().apply {
@@ -31,24 +30,17 @@ class PlayerEngine(private val context: Context, private val onState: (positionM
             prepareAsync()
         }
     }
-
     fun playPause() {
         val p = player ?: return
         runCatching { if (p.isPlaying) p.pause() else p.start() }
         onState(runCatching { p.currentPosition }.getOrDefault(0), runCatching { p.duration }.getOrDefault(0), runCatching { p.isPlaying }.getOrDefault(false))
-        handler.removeCallbacks(ticker)
-        handler.post(ticker)
+        handler.removeCallbacks(ticker); handler.post(ticker)
     }
-
-    fun seekBy(deltaMs: Int) {
-        val p = player ?: return
-        runCatching { p.seekTo((p.currentPosition + deltaMs).coerceIn(0, p.duration.coerceAtLeast(0))) }
-        onState(runCatching { p.currentPosition }.getOrDefault(0), runCatching { p.duration }.getOrDefault(0), runCatching { p.isPlaying }.getOrDefault(false))
-    }
-
+    fun seekBy(deltaMs: Int) { val p=player ?: return; runCatching { p.seekTo((p.currentPosition+deltaMs).coerceIn(0,p.duration.coerceAtLeast(0))) }; onState(runCatching { p.currentPosition }.getOrDefault(0),runCatching { p.duration }.getOrDefault(0),runCatching { p.isPlaying }.getOrDefault(false)) }
     fun seekTo(positionMs: Int) { runCatching { player?.seekTo(positionMs.coerceAtLeast(0)) } }
     fun setLoop(enabled: Boolean) { runCatching { player?.isLooping = enabled } }
+    fun setVolume(value: Float) { runCatching { player?.setVolume(value.coerceIn(0f,1f), value.coerceIn(0f,1f)) } }
     fun isLoaded(): Boolean = player != null
     fun audioSessionId(): Int = runCatching { player?.audioSessionId ?: 0 }.getOrDefault(0)
-    fun release() { handler.removeCallbacks(ticker); player?.release(); player = null }
+    fun release() { handler.removeCallbacks(ticker); player?.release(); player=null }
 }
