@@ -3,101 +3,13 @@
   "project": "StyloDSP",
   "states": ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "PASSING"],
   "features": [
-    {
-      "id": "H-001",
-      "name": "Harness baseline",
-      "priority": "P0",
-      "state": "PASSING",
-      "acceptance": [
-        "Agent rules exist",
-        "Persistent project state exists",
-        "Feature tracking exists",
-        "Verification protocol exists",
-        "Session handoff exists"
-      ],
-      "evidence": "Harness documents committed to main on 2026-08-24"
-    },
-    {
-      "id": "H-002",
-      "name": "Repository audit and executable verification baseline",
-      "priority": "P0",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "Repository structure audited",
-        "Existing tests/build commands identified",
-        "Baseline verification results recorded"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "DSP-001",
-      "name": "Rust DSP Core builds",
-      "priority": "P0",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "Rust Core compiles",
-        "Core remains platform-independent"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "DSP-002",
-      "name": "Gain reference implementation",
-      "priority": "P0",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "Gain processing has deterministic tests",
-        "Finite output is verified",
-        "Reference behavior is documented"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "DSP-003",
-      "name": "Realtime safety",
-      "priority": "P0",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "No allocation in processing callback",
-        "No blocking locks",
-        "No I/O/UI calls in realtime path"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "AND-001",
-      "name": "Android APK proof",
-      "priority": "P0",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "Android target builds",
-        "APK is reproducible",
-        "Android reaches Core through FFI",
-        "Gain path produces expected output"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "WEB-001",
-      "name": "Web/WASM parity",
-      "priority": "P1",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "WASM path exists",
-        "Reference vectors pass documented tolerance"
-      ],
-      "evidence": null
-    },
-    {
-      "id": "VST-001",
-      "name": "VST3 adapter proof",
-      "priority": "P2",
-      "state": "NOT_STARTED",
-      "acceptance": [
-        "Host adapter integrates Core",
-        "Reference vectors remain within tolerance"
-      ],
-      "evidence": null
-    }
+    {"id":"H-001","name":"Harness baseline","priority":"P0","state":"PASSING","acceptance":["Agent rules exist","Persistent project state exists","Feature tracking exists","Verification protocol exists","Session handoff exists"],"evidence":"Harness documents committed to main on 2026-08-24"},
+    {"id":"H-002","name":"Repository audit and executable verification baseline","priority":"P0","state":"IN_PROGRESS","acceptance":["Repository structure audited","Existing tests/build commands identified","Baseline verification results recorded"],"evidence":"Initial structural audit recorded in harness/AUDIT-2026-08-24.md; executable commands still pending"},
+    {"id":"DSP-001","name":"Rust DSP Core builds","priority":"P0","state":"BLOCKED","acceptance":["Rust Core compiles","Core remains platform-independent"],"evidence":"Current root tree inspected on main does not expose core/Cargo.toml referenced by Android workflow"},
+    {"id":"DSP-002","name":"Gain reference implementation","priority":"P0","state":"NOT_STARTED","acceptance":["Gain processing has deterministic tests","Finite output is verified","Reference behavior is documented"],"evidence":null},
+    {"id":"DSP-003","name":"Realtime safety","priority":"P0","state":"NOT_STARTED","acceptance":["No allocation in processing callback","No blocking locks","No I/O/UI calls in realtime path"],"evidence":null},
+    {"id":"AND-001","name":"Android APK proof","priority":"P0","state":"BLOCKED","acceptance":["Android target builds","APK is reproducible","Android reaches Core through FFI","Gain path produces expected output"],"evidence":"Current root tree inspected on main does not expose android/ and core/ paths referenced by workflow"},
+    {"id":"WEB-001","name":"Web/WASM parity","priority":"P1","state":"NOT_STARTED","acceptance":["WASM path exists","Reference vectors pass documented tolerance"],"evidence":null},
+    {"id":"VST-001","name":"VST3 adapter proof","priority":"P2","state":"NOT_STARTED","acceptance":["Host adapter integrates Core","Reference vectors remain within tolerance"],"evidence":null}
   ]
 }
