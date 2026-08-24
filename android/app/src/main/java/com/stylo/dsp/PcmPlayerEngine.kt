@@ -82,7 +82,7 @@ class PcmPlayerEngine(private val context: Context, private val onState: (Int, I
                 .setBufferSizeInBytes(max(minBuf, sampleRate * channels / 4 * 2))
                 .setTransferMode(AudioTrack.MODE_STREAM).build().also { it.setVolume(volume) }
 
-            val processors = Array(channels) { EqBank(sampleRate, mutableListOf()) }
+            val processors = Array(channels) { EqBank(sampleRate) }
             var lastBands: List<EqBand> = emptyList()
             var inputDone = false
             var outputDone = false
@@ -95,14 +95,14 @@ class PcmPlayerEngine(private val context: Context, private val onState: (Int, I
                 }
                 if (lastBands != bands) {
                     lastBands = bands.map { it.copy() }
-                    processors.forEach { bank -> bank.bands.clear(); bank.bands.addAll(lastBands); bank.configureAll(); bank.reset() }
+                    processors.forEach { bank -> bank.setBands(lastBands); bank.reset() }
                 }
                 if (!inputDone) {
                     val inputIndex = codec.dequeueInputBuffer(10_000)
                     if (inputIndex >= 0) {
                         val input = codec.getInputBuffer(inputIndex) ?: continue
                         val size = extractor.readSampleData(input, 0)
-                        if (size < 0) { codec.queueInputBuffer(inputIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM); inputDone = true }
+                        if (size < 0) { codec.queueInputBuffer(inputIndex, 0, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM); inputDone = true }
                         else { codec.queueInputBuffer(inputIndex, 0, size, extractor.sampleTime, 0); extractor.advance() }
                     }
                 }
