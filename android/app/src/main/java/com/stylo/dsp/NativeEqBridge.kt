@@ -1,6 +1,7 @@
 package com.stylo.dsp
 
 import android.media.audiofx.DynamicsProcessing
+import android.os.Build
 
 class NativeEqBridge(private val audioSessionId: Int, private val bandCount: Int = 31) {
     private var fx: DynamicsProcessing? = null
@@ -8,16 +9,13 @@ class NativeEqBridge(private val audioSessionId: Int, private val bandCount: Int
         private set
 
     init {
-        runCatching {
-            val cfg = DynamicsProcessing.Config.Builder(44100, true, 0, 0, 0, 0, bandCount, 0)
-                .setPreferredFrameDuration(10f)
-                .build()
-            fx = DynamicsProcessing(0, audioSessionId).apply {
-                enabled = true
-                setProperties(cfg)
-            }
-            available = true
-        }.onFailure { available = false }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && audioSessionId != 0) {
+            runCatching {
+                val cfg = DynamicsProcessing.Config.Builder(1, false, 0, false, 0, true, bandCount, false).build()
+                fx = DynamicsProcessing(0, audioSessionId).apply { setProperties(cfg); enabled = true }
+                available = true
+            }.onFailure { available = false }
+        }
     }
 
     fun setGraphicGain(index: Int, gainDb: Float) {
