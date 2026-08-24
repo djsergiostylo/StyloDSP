@@ -4,18 +4,25 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.exp
 import kotlin.math.ln
+import kotlin.math.log10
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/** Lightweight realtime DSP primitives. No allocations are made in FFT.process(). */
+/**
+ * Realtime DSP primitives.
+ * FFT uses precomputed twiddle factors and a reusable working buffer so process()
+ * performs no heap allocation and avoids trig functions in the hot loop.
+ */
 class Fft(private val size: Int) {
     private val real = DoubleArray(size)
     private val imag = DoubleArray(size)
     private val window = DoubleArray(size) { i -> 0.5 - 0.5 * cos(2.0 * PI * i / (size - 1)) }
     private val bitReverse = IntArray(size)
+    private val twiddleCos = DoubleArray(size / 2)
+    private val twiddleSin = DoubleArray(size / 2)
 
     init {
-        require(size > 1 && size and (size - 1) == 0)
+        require(size > 1 && size and (size - 1) == 0) { "FFT size must be a power of two" }
         var j = 0
         for (i in 1 until size) {
             var bit = size shr 1
@@ -23,28 +30,43 @@ class Fft(private val size: Int) {
             j = j xor bit
             bitReverse[i] = j
         }
+        for (i in twiddleCos.indices) {
+            val a = -2.0 * PI * i / size
+            twiddleCos[i] = cos(a)
+            twiddleSin[i] = sin(a)
+        }
     }
 
     fun process(input: ShortArray, count: Int, magnitudesDb: FloatArray) {
+        val safeCount = count.coerceIn(0, size)
         for (i in 0 until size) {
-            val x = if (i < count) input[i].toDouble() / 32768.0 else 0.0
+            val x = if (i < safeCount) input[i].toDouble() / 32768.0 else 0.0
             real[bitReverse[i]] = x * window[i]
             imag[bitReverse[i]] = 0.0
         }
         var len = 2
         while (len <= size) {
             val half = len shr 1
-            val theta = -2.0 * PI / len
+            val step = size / len
             var base = 0
             while (base < size) {
-                for (j in 0 until half) {
-                    val a = theta * j
-                    val wr = cos(a); val wi = sin(a)
-                    val i0 = base + j; val i1 = i0 + half
+                var j = 0
+                var tw = 0
+                while (j < half) {
+                    val wr = twiddleCos[tw]
+                    val wi = twiddleSin[tw]
+                    val i0 = base + j
+                    val i1 = i0 + half
                     val tr = wr * real[i1] - wi * imag[i1]
                     val ti = wr * imag[i1] + wi * real[i1]
-                    real[i1] = real[i0] - tr; imag[i1] = imag[i0] - ti
-                    real[i0] += tr; imag[i0] += ti
+                    val r0 = real[i0]
+                    val im0 = imag[i0]
+                    real[i1] = r0 - tr
+                    imag[i1] = im0 - ti
+                    real[i0] = r0 + tr
+                    imag[i0] = im0 + ti
+                    j++
+                    tw += step
                 }
                 base += len
             }
@@ -53,23 +75,29 @@ class Fft(private val size: Int) {
         val n = minOf(magnitudesDb.size, size / 2)
         for (i in 0 until n) {
             val mag = sqrt(real[i] * real[i] + imag[i] * imag[i]) / size
-            magnitudesDb[i] = (20.0 * kotlin.math.log10(maxOf(1e-7, mag))).toFloat()
+            magnitudesDb[i] = (20.0 * log10(maxOf(1e-7, mag))).toFloat()
         }
     }
 }
 
 enum class FilterType { PEAK, LOW_SHELF, HIGH_SHELF, LOW_PASS, HIGH_PASS, NOTCH, BAND_PASS, ALL_PASS, TILT }
 
-data class EqBand(var frequency: Double, var gainDb: Double, var q: Double = 1.0, var type: FilterType = FilterType.PEAK, var enabled: Boolean = true)
+data class EqBand(
+    var frequency: Double,
+    var gainDb: Double,
+    var q: Double = 1.0,
+    var type: FilterType = FilterType.PEAK,
+    var enabled: Boolean = true
+)
 
-/** Stereo/mono-safe biquad coefficients. Process in-place for low allocation. */
+/** One biquad with state kept between PCM blocks. Configure outside the realtime callback. */
 class Biquad(private val sampleRate: Double) {
     private var b0 = 1.0; private var b1 = 0.0; private var b2 = 0.0
     private var a1 = 0.0; private var a2 = 0.0
     private var z1 = 0.0; private var z2 = 0.0
 
     fun configure(band: EqBand) {
-        if (!band.enabled) { b0 = 1.0; b1 = 0.0; b2 = 0.0; a1 = 0.0; a2 = 0.0; return }
+        if (!band.enabled) { b0=1.0; b1=0.0; b2=0.0; a1=0.0; a2=0.0; return }
         val f = band.frequency.coerceIn(10.0, sampleRate * 0.49)
         val q = band.q.coerceIn(0.1, 18.0)
         val A = 10.0.pow(band.gainDb / 40.0)
@@ -85,25 +113,28 @@ class Biquad(private val sampleRate: Double) {
             FilterType.NOTCH -> { B0=1; B1=-2*c; B2=1; A0=1+alpha; A1=-2*c; A2=1-alpha }
             FilterType.BAND_PASS -> { B0=alpha; B1=0; B2=-alpha; A0=1+alpha; A1=-2*c; A2=1-alpha }
             FilterType.ALL_PASS -> { B0=1-alpha; B1=-2*c; B2=1+alpha; A0=1+alpha; A1=-2*c; A2=1-alpha }
-            FilterType.TILT -> { B0=1+band.gainDb/24.0; B1=-2*c; B2=1-band.gainDb/24.0; A0=1+alpha; A1=-2*c; A2=1-alpha }
+            FilterType.TILT -> { val slope=band.gainDb.coerceIn(-24.0,24.0)/24.0; B0=1+slope; B1=-2*c; B2=1-slope; A0=1+alpha; A1=-2*c; A2=1-alpha }
         }
         b0=B0/A0; b1=B1/A0; b2=B2/A0; a1=A1/A0; a2=A2/A0
     }
 
     fun process(x: Double): Double {
-        val y = b0*x + z1
-        z1 = b1*x - a1*y + z2
-        z2 = b2*x - a2*y
+        val y=b0*x+z1
+        z1=b1*x-a1*y+z2
+        z2=b2*x-a2*y
         return y
     }
 
-    fun reset() { z1=0.0; z2=0.0 }
-    private fun Double.pow(p: Double): Double = kotlin.math.exp(kotlin.math.ln(this) * p)
+    fun reset(){z1=0.0;z2=0.0}
+    private fun Double.pow(p:Double):Double=exp(ln(this)*p)
 }
 
+/**
+ * Sequential filter bank. Reconfigure only from the control/UI side; process() is allocation-free.
+ */
 class EqBank(private val sampleRate: Double, val bands: MutableList<EqBand>) {
     private val filters = bands.map { Biquad(sampleRate) }
-    fun configureAll() { bands.forEachIndexed { i,b -> filters[i].configure(b) } }
-    fun process(x: Double): Double { var y=x; for (f in filters) y=f.process(y); return y }
-    fun reset() = filters.forEach { it.reset() }
+    fun configureAll(){bands.forEachIndexed{i,b->filters[i].configure(b)}}
+    fun process(x:Double):Double{var y=x;for(f in filters)y=f.process(y);return y}
+    fun reset(){filters.forEach{it.reset()}}
 }
