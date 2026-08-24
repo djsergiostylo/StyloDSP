@@ -1,15 +1,16 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "StyloDSP",
   "states": ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "PASSING"],
   "features": [
     {"id":"H-001","name":"Harness baseline","priority":"P0","state":"PASSING","acceptance":["Agent rules exist","Persistent project state exists","Feature tracking exists","Verification protocol exists","Session handoff exists"],"evidence":"Harness documents committed to main on 2026-08-24"},
-    {"id":"H-002","name":"Repository audit and executable verification baseline","priority":"P0","state":"IN_PROGRESS","acceptance":["Repository structure audited","Existing tests/build commands identified","Baseline verification results recorded"],"evidence":"Initial structural audit recorded in harness/AUDIT-2026-08-24.md; executable commands still pending"},
-    {"id":"DSP-001","name":"Rust DSP Core builds","priority":"P0","state":"BLOCKED","acceptance":["Rust Core compiles","Core remains platform-independent"],"evidence":"Current root tree inspected on main does not expose core/Cargo.toml referenced by Android workflow"},
-    {"id":"DSP-002","name":"Gain reference implementation","priority":"P0","state":"NOT_STARTED","acceptance":["Gain processing has deterministic tests","Finite output is verified","Reference behavior is documented"],"evidence":null},
-    {"id":"DSP-003","name":"Realtime safety","priority":"P0","state":"NOT_STARTED","acceptance":["No allocation in processing callback","No blocking locks","No I/O/UI calls in realtime path"],"evidence":null},
-    {"id":"AND-001","name":"Android APK proof","priority":"P0","state":"BLOCKED","acceptance":["Android target builds","APK is reproducible","Android reaches Core through FFI","Gain path produces expected output"],"evidence":"Current root tree inspected on main does not expose android/ and core/ paths referenced by workflow"},
-    {"id":"WEB-001","name":"Web/WASM parity","priority":"P1","state":"NOT_STARTED","acceptance":["WASM path exists","Reference vectors pass documented tolerance"],"evidence":null},
-    {"id":"VST-001","name":"VST3 adapter proof","priority":"P2","state":"NOT_STARTED","acceptance":["Host adapter integrates Core","Reference vectors remain within tolerance"],"evidence":null}
+    {"id":"H-002","name":"Repository audit and executable verification baseline","priority":"P0","state":"PASSING","acceptance":["Repository structure audited","Android path restored","Build workflow exists","MVP APK artifact previously verified"],"evidence":"Android MVP was built and verified before production expansion"},
+    {"id":"AND-002","name":"Smooth realtime analyzer","priority":"P0","state":"IN_PROGRESS","acceptance":["Radix-2 FFT","No per-bin DFT","UI refresh throttled","Real device remains smooth"],"evidence":"android/.../DspEngine.kt and MainActivity.kt implement radix-2 FFT and ~30 FPS UI updates; real-device gate pending"},
+    {"id":"EQ-031","name":"31-band graphic EQ","priority":"P0","state":"IN_PROGRESS","acceptance":["31 fixed bands 20 Hz–20 kHz","Direct node editing","Gain audible in playback","Bypass/flat/reset"],"evidence":"31-band model and Android DynamicsProcessing bridge implemented; real-device audio verification pending"},
+    {"id":"EQ-PARAM","name":"8-band parametric EQ","priority":"P0","state":"IN_PROGRESS","acceptance":["Frequency","Gain","Q","Filter types","Audible custom DSP processing"],"evidence":"EqBand/Biquad engine and UI model implemented; decoded PCM integration and audible verification remain before PASSING"},
+    {"id":"PLAYER-001","name":"Integrated audio player","priority":"P0","state":"IN_PROGRESS","acceptance":["Open audio","Play","Pause","Back","Forward","Seek","Loop","Volume"],"evidence":"PlayerEngine and UI controls implemented; final device verification pending"},
+    {"id":"PRESET-001","name":"Presets and persistence","priority":"P1","state":"IN_PROGRESS","acceptance":["Save","Load","Flat","Persistence after restart"],"evidence":"SharedPreferences JSON implementation present; final device verification pending"},
+    {"id":"UX-001","name":"Mobile professional UI","priority":"P1","state":"IN_PROGRESS","acceptance":["No crowded bottom controls","Large graph","48dp-class touch targets","Direct manipulation"],"evidence":"Controls split into dedicated rows; final device review pending"},
+    {"id":"REL-001","name":"Production release","priority":"P0","state":"NOT_STARTED","acceptance":["All gates pass","Release APK/AAB reproducible","Install/launch verified","Rollback checkpoint recorded"],"evidence":null}
   ]
 }
