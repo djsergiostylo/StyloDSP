@@ -1,35 +1,38 @@
 # STYLO HARNESS · STATE
 
 **Pilot date:** 2026-08-24
-**Pilot status:** INITIALIZED
-**Active feature:** H-001 Harness baseline
+**Pilot status:** IN_PROGRESS
+**Active feature:** H-002 Repository audit and executable verification baseline
 
 ## Current truth
 - Repository: `djsergiostylo/StyloDSP`
 - Default branch: `main`
-- Existing architecture: platform-independent Rust DSP target with Web/Android/VST3 adapters.
-- Existing README documents Gain, EQ, Compressor, Saturation, Clipper, Limiter, Analyzer and ChainManager.
-- Existing roadmap identifies Core + Gain + Android APK as the first platform proof.
-- Harness baseline has now been added.
+- Harness baseline is installed.
+- Web project is present and has Node/TypeScript/Vitest scripts.
+- Repository architecture documents a Rust Core and Android/Web/VST3 adapters.
+- The Android GitHub Actions workflow expects `core/` and `android/`, but the current root tree inspected on `main` does not expose those directories.
 
-## Verified in this initialization
-- Repository is accessible.
-- `README.md` exists and documents the architecture and current roadmap.
-- `docs/ARCHITECTURE.md` exists and defines platform boundaries and realtime rules.
-- `AGENTS.md` has been added.
-- Harness project/state/feature/verification/handoff/decision documents are being added as the pilot baseline.
+## Verified
+- Repository accessible.
+- `README.md` and `docs/ARCHITECTURE.md` exist.
+- Harness documents exist.
+- `web/package.json` defines Node >=24 <25, npm >=11 <12, `test` and `typecheck` scripts.
+- `web/README.md` documents the current Web pipeline and next Web testing milestone.
+- Android workflow configuration was inspected.
 
-## Not yet verified by this pilot
+## Not yet verified
+- Actual `npm test` result.
+- Actual TypeScript typecheck result.
 - Rust Core compilation.
-- Gain Rust implementation.
 - Android target compilation.
 - APK generation.
 - Runtime audio path.
 - Realtime allocation safety through executable tests.
 - Cross-platform parity.
 
-## Current blockers
-No blocker for harness initialization. Technical implementation work remains pending.
+## Current blockers / inconsistencies
+1. The Android workflow references `core/Cargo.toml` and Android paths that are not visible in the current root tree. This must be reconciled before Android/Core can be PASSING.
+2. This audit has not executed the project commands, so executable verification remains open.
 
 ## Next feature
-`H-002` Audit repository against harness and establish the executable verification baseline.
+`H-002` remains IN_PROGRESS. Next: enumerate Web tests, inspect workflow history and reconcile the Rust/Android tree before declaring any technical gate PASSING.
