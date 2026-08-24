@@ -1,4 +1,4 @@
-name: STYLO Android APK
+name: STYLO Android Release
 
 on:
   workflow_dispatch:
@@ -6,47 +6,91 @@ on:
     paths:
       - 'android/**'
       - '.github/workflows/android-apk.yml'
-  pull_request:
-    paths:
-      - 'android/**'
-      - '.github/workflows/android-apk.yml'
 
 concurrency:
-  group: stylo-android-apk-${{ github.ref }}
+  group: stylo-android-release-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   ANDROID_PLATFORM: 35
 
 jobs:
-  build-apk:
+  build-android:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-      - name: Install Android SDK
-        run: sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0"
+        with:
+          packages: 'platform-tools'
+          accept-android-sdk-licenses: false
+
+      - name: Accept Android SDK licenses non-interactively
+        shell: bash
+        run: |
+          set -e
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+      - name: Install required Android SDK packages
+        shell: bash
+        run: |
+          set -e
+          sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0"
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          set -e
+          test -d "$ANDROID_HOME/platforms/android-${ANDROID_PLATFORM}"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          sdkmanager --list_installed | grep -E "platforms;android-${ANDROID_PLATFORM}|build-tools;35.0.0"
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+
+      - name: Compile and test
+        run: gradle -p android :app:compileDebugKotlin :app:testDebugUnitTest --stacktrace
+
       - name: Build debug APK
         run: gradle -p android :app:assembleDebug --stacktrace
-      - name: Verify APK
+
+      - name: Build release APK
+        run: gradle -p android :app:assembleRelease --stacktrace
+
+      - name: Build release AAB
+        run: gradle -p android :app:bundleRelease --stacktrace
+
+      - name: Verify release outputs
+        shell: bash
         run: |
+          set -e
           test -s android/app/build/outputs/apk/debug/app-debug.apk
+          test -s android/app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s android/app/build/outputs/bundle/release/app-release.aab
           file android/app/build/outputs/apk/debug/app-debug.apk
+          file android/app/build/outputs/apk/release/app-release-unsigned.apk
+          file android/app/build/outputs/bundle/release/app-release.aab
           ls -lh android/app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload APK
+          ls -lh android/app/build/outputs/apk/release/app-release-unsigned.apk
+          ls -lh android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: stylo-dsp-android-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: stylo-eq-release-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+            android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
