@@ -30,17 +30,28 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: 'tools platform-tools'
-          accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: true
+          packages: 'platform-tools'
+          accept-android-sdk-licenses: false
 
-      - name: Accept all Android SDK licenses
+      - name: Accept Android SDK licenses non-interactively
         shell: bash
-        run: yes | sdkmanager --licenses >/dev/null || true
+        run: |
+          set -e
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
 
-      - name: Install Android SDK
+      - name: Install required Android SDK packages
         shell: bash
-        run: sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0"
+        run: |
+          set -e
+          yes | sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0" >/dev/null
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          set -e
+          test -d "$ANDROID_HOME/platforms/android-${ANDROID_PLATFORM}"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          sdkmanager --list_installed | grep -E "platforms;android-${ANDROID_PLATFORM}|build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
