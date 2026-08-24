@@ -1,15 +1,21 @@
 {
-  "version": 1,
+  "version": 2,
   "project": "StyloDSP",
   "states": ["NOT_STARTED", "IN_PROGRESS", "BLOCKED", "PASSING"],
   "features": [
-    {"id":"H-001","name":"Harness baseline","priority":"P0","state":"PASSING","acceptance":["Agent rules exist","Persistent project state exists","Feature tracking exists","Verification protocol exists","Session handoff exists"],"evidence":"Harness documents committed to main on 2026-08-24"},
-    {"id":"H-002","name":"Repository audit and executable verification baseline","priority":"P0","state":"IN_PROGRESS","acceptance":["Repository structure audited","Existing tests/build commands identified","Baseline verification results recorded"],"evidence":"Initial structural audit recorded in harness/AUDIT-2026-08-24.md; executable commands still pending"},
-    {"id":"DSP-001","name":"Rust DSP Core builds","priority":"P0","state":"BLOCKED","acceptance":["Rust Core compiles","Core remains platform-independent"],"evidence":"Current root tree inspected on main does not expose core/Cargo.toml referenced by Android workflow"},
-    {"id":"DSP-002","name":"Gain reference implementation","priority":"P0","state":"NOT_STARTED","acceptance":["Gain processing has deterministic tests","Finite output is verified","Reference behavior is documented"],"evidence":null},
-    {"id":"DSP-003","name":"Realtime safety","priority":"P0","state":"NOT_STARTED","acceptance":["No allocation in processing callback","No blocking locks","No I/O/UI calls in realtime path"],"evidence":null},
-    {"id":"AND-001","name":"Android APK proof","priority":"P0","state":"BLOCKED","acceptance":["Android target builds","APK is reproducible","Android reaches Core through FFI","Gain path produces expected output"],"evidence":"Current root tree inspected on main does not expose android/ and core/ paths referenced by workflow"},
-    {"id":"WEB-001","name":"Web/WASM parity","priority":"P1","state":"NOT_STARTED","acceptance":["WASM path exists","Reference vectors pass documented tolerance"],"evidence":null},
-    {"id":"VST-001","name":"VST3 adapter proof","priority":"P2","state":"NOT_STARTED","acceptance":["Host adapter integrates Core","Reference vectors remain within tolerance"],"evidence":null}
+    {"id":"H-001","name":"Harness baseline","priority":"P0","state":"PASSING","evidence":"Harness documents committed on 2026-08-24"},
+    {"id":"H-002","name":"Repository audit and executable verification baseline","priority":"P0","state":"IN_PROGRESS","evidence":"Structural audit recorded; executable commands still pending"},
+    {"id":"PROD-001","name":"Mobile audio I/O vertical slice","priority":"P0","state":"NOT_STARTED","acceptance":["Audio can be captured or loaded","Audio can be monitored/processed","Failure states are visible"]},
+    {"id":"DSP-FFT-001","name":"Realtime frequency spectrum","priority":"P0","state":"NOT_STARTED","acceptance":["FFT runs continuously","Frequency axis is logarithmic","Magnitude/dB scale is stable","Spectrum updates in realtime"]},
+    {"id":"EQ-001","name":"Single interactive parametric EQ band","priority":"P0","state":"NOT_STARTED","acceptance":["Band has frequency, gain and Q","Node can be moved horizontally and vertically","DSP responds to parameter changes"]},
+    {"id":"EQ-VIS-001","name":"Spectrum + EQ curve renderer","priority":"P0","state":"NOT_STARTED","acceptance":["Spectrum and EQ response share one interactive graph","EQ curve updates from parameters","Visual rendering remains responsive"]},
+    {"id":"EQ-TOUCH-001","name":"Touch interaction layer","priority":"P0","state":"NOT_STARTED","acceptance":["Tap selects nearest band","Drag changes frequency/gain","Gesture changes Q","Selection remains stable during movement"]},
+    {"id":"EQ-MULTI-001","name":"Multiple EQ bands","priority":"P1","state":"NOT_STARTED","acceptance":["Bands can be added and removed","Each band remains independently editable","Combined response is calculated correctly"]},
+    {"id":"EQ-UX-001","name":"Professional mobile EQ workflow","priority":"P1","state":"NOT_STARTED","acceptance":["Readable on phone","No accidental gestures dominate","Parameter editing is precise","Presets can be saved/loaded"]},
+    {"id":"PERF-001","name":"Realtime performance and latency","priority":"P0","state":"NOT_STARTED","acceptance":["No avoidable allocations in audio callback","UI remains responsive","Spectrum does not visibly stall","Measured latency is documented"]},
+    {"id":"AND-001","name":"Reproducible Android APK","priority":"P0","state":"BLOCKED","acceptance":["Android target builds","APK is reproducible","DSP path reaches the UI","First vertical slice runs on device"],"evidence":"Current main tree audit found workflow references to core/android paths that require reconciliation"},
+    {"id":"DSP-001","name":"Rust DSP Core builds","priority":"P0","state":"BLOCKED","acceptance":["Rust Core compiles","Core remains platform-independent"],"evidence":"Current main tree audit found Android workflow reference to core/Cargo.toml; location/state must be reconciled"},
+    {"id":"WEB-001","name":"Web/WASM parity","priority":"P2","state":"NOT_STARTED"},
+    {"id":"VST-001","name":"VST3 adapter proof","priority":"P3","state":"NOT_STARTED"}
   ]
 }

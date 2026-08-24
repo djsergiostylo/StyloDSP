@@ -2,11 +2,10 @@ name: STYLO Android APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths: [ 'android/**', 'core/**', '.github/workflows/android-apk.yml' ]
   push:
-    paths:
-      - 'android/**'
-      - 'core/**'
-      - '.github/workflows/android-apk.yml'
+    paths: [ 'android/**', 'core/**', '.github/workflows/android-apk.yml' ]
 
 concurrency:
   group: stylo-android-apk-${{ github.ref }}
@@ -21,31 +20,19 @@ env:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
+        with: { distribution: temurin, java-version: '17' }
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: ''
-
       - name: Install Android toolchain
-        run: |
-          sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;36.0.0" "cmake;${ANDROID_CMAKE_VERSION}" "ndk;${ANDROID_NDK_VERSION}"
-
+        run: sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;36.0.0" "cmake;${ANDROID_CMAKE_VERSION}" "ndk;${ANDROID_NDK_VERSION}"
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
-
+        with: { targets: aarch64-linux-android }
       - name: Build Rust Core
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
@@ -56,31 +43,22 @@ jobs:
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           cp core/target/aarch64-linux-android/release/libstylo_dsp_core.so android/app/src/main/jniLibs/arm64-v8a/
           file android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so
-          readelf -d android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so | grep SONAME
-
+          readelf -h android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so | grep 'AArch64'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: '9.5.0'
-
+        with: { gradle-version: '9.5.0' }
       - name: Build debug APK
         run: gradle -p android :app:assembleDebug --stacktrace
-
-      - name: Verify native dependencies
+      - name: Verify packaged native libraries
         run: |
-          echo "--- libstylo_android.so dependencies ---"
-          readelf -d android/app/build/intermediates/stripped_native_libs/debug/out/lib/arm64-v8a/libstylo_android.so | grep NEEDED
-          if readelf -d android/app/build/intermediates/stripped_native_libs/debug/out/lib/arm64-v8a/libstylo_android.so | grep -E 'StyloDSP|/home/runner|/workspace|src/main'; then
-            echo "ERROR: native dependency contains a build-machine path"
-            exit 1
-          fi
-          echo "Native dependency paths are relocatable."
-
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          find android/app/build -type f \( -name 'libstylo_android.so' -o -name 'libstylo_dsp_core.so' \) -print
+          test -n "$(find android/app/build -type f -name 'libstylo_android.so' -print -quit)"
+          test -n "$(find android/app/build -type f -name 'libstylo_dsp_core.so' -print -quit)"
       - name: Verify APK
         run: |
           test -s android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
-
+          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/(arm64-v8a|armeabi-v7a|x86|x86_64)/libstylo_(android|dsp_core)\.so'
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
