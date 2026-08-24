@@ -34,27 +34,21 @@ class PlayerEngine(private val context: Context, private val onState: (positionM
 
     fun playPause() {
         val p = player ?: return
-        if (p.isPlaying) p.pause() else p.start()
-        onState(p.currentPosition, p.duration, p.isPlaying)
+        runCatching { if (p.isPlaying) p.pause() else p.start() }
+        onState(runCatching { p.currentPosition }.getOrDefault(0), runCatching { p.duration }.getOrDefault(0), runCatching { p.isPlaying }.getOrDefault(false))
         handler.removeCallbacks(ticker)
         handler.post(ticker)
     }
 
     fun seekBy(deltaMs: Int) {
         val p = player ?: return
-        p.seekTo((p.currentPosition + deltaMs).coerceIn(0, p.duration.coerceAtLeast(0)))
-        onState(p.currentPosition, p.duration, p.isPlaying)
+        runCatching { p.seekTo((p.currentPosition + deltaMs).coerceIn(0, p.duration.coerceAtLeast(0))) }
+        onState(runCatching { p.currentPosition }.getOrDefault(0), runCatching { p.duration }.getOrDefault(0), runCatching { p.isPlaying }.getOrDefault(false))
     }
 
-    fun seekTo(positionMs: Int) {
-        player?.seekTo(positionMs.coerceAtLeast(0))
-    }
-
-    fun setLoop(enabled: Boolean) { player?.isLooping = enabled }
+    fun seekTo(positionMs: Int) { runCatching { player?.seekTo(positionMs.coerceAtLeast(0)) } }
+    fun setLoop(enabled: Boolean) { runCatching { player?.isLooping = enabled } }
     fun isLoaded(): Boolean = player != null
-    fun release() {
-        handler.removeCallbacks(ticker)
-        player?.release()
-        player = null
-    }
+    fun audioSessionId(): Int = runCatching { player?.audioSessionId ?: 0 }.getOrDefault(0)
+    fun release() { handler.removeCallbacks(ticker); player?.release(); player = null }
 }
