@@ -43,7 +43,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          yes | sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0" >/dev/null
+          sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;35.0.0"
 
       - name: Verify Android SDK
         shell: bash
