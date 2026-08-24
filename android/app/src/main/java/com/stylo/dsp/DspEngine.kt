@@ -8,11 +8,7 @@ import kotlin.math.log10
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/**
- * Realtime DSP primitives.
- * FFT uses precomputed twiddle factors and a reusable working buffer so process()
- * performs no heap allocation and avoids trig functions in the hot loop.
- */
+/** Realtime DSP primitives. Allocation-free in process(). */
 class Fft(private val size: Int) {
     private val real = DoubleArray(size)
     private val imag = DoubleArray(size)
@@ -90,7 +86,7 @@ data class EqBand(
     var enabled: Boolean = true
 )
 
-/** One biquad with state kept between PCM blocks. Configure outside the realtime callback. */
+/** One biquad with state kept between PCM blocks. */
 class Biquad(private val sampleRate: Double) {
     private var b0 = 1.0; private var b1 = 0.0; private var b2 = 0.0
     private var a1 = 0.0; private var a2 = 0.0
@@ -100,7 +96,7 @@ class Biquad(private val sampleRate: Double) {
         if (!band.enabled) { b0=1.0; b1=0.0; b2=0.0; a1=0.0; a2=0.0; return }
         val f = band.frequency.coerceIn(10.0, sampleRate * 0.49)
         val q = band.q.coerceIn(0.1, 18.0)
-        val A = 10.0.pow(band.gainDb / 40.0)
+        val A = exp(ln(10.0) * band.gainDb / 40.0)
         val w0 = 2.0 * PI * f / sampleRate
         val c = cos(w0); val s = sin(w0); val alpha = s / (2.0 * q)
         var B0: Double; var B1: Double; var B2: Double; var A0: Double; var A1: Double; var A2: Double
@@ -126,15 +122,20 @@ class Biquad(private val sampleRate: Double) {
     }
 
     fun reset(){z1=0.0;z2=0.0}
-    private fun Double.pow(p:Double):Double=exp(ln(this)*p)
 }
 
-/**
- * Sequential filter bank. Reconfigure only from the control/UI side; process() is allocation-free.
- */
-class EqBank(private val sampleRate: Double, val bands: MutableList<EqBand>) {
-    private val filters = bands.map { Biquad(sampleRate) }
-    fun configureAll(){bands.forEachIndexed{i,b->filters[i].configure(b)}}
-    fun process(x:Double):Double{var y=x;for(f in filters)y=f.process(y);return y}
-    fun reset(){filters.forEach{it.reset()}}
+/** Dynamic filter bank. Rebuilds filters only when the control-side band list changes. */
+class EqBank(private val sampleRate: Double, initialBands: List<EqBand> = emptyList()) {
+    private var bands = initialBands.map { it.copy() }
+    private var filters: Array<Biquad> = Array(bands.size) { Biquad(sampleRate) }
+
+    fun setBands(newBands: List<EqBand>) {
+        bands = newBands.map { it.copy() }
+        filters = Array(bands.size) { Biquad(sampleRate) }
+        configureAll()
+    }
+
+    fun configureAll() { bands.forEachIndexed { i, b -> filters[i].configure(b) } }
+    fun process(x: Double): Double { var y=x; for (f in filters) y=f.process(y); return y }
+    fun reset(){ filters.forEach { it.reset() } }
 }
