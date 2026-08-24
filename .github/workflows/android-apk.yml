@@ -3,15 +3,9 @@ name: STYLO Android APK
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'android/**'
-      - 'core/**'
-      - '.github/workflows/android-apk.yml'
+    paths: [ 'android/**', 'core/**', '.github/workflows/android-apk.yml' ]
   push:
-    paths:
-      - 'android/**'
-      - 'core/**'
-      - '.github/workflows/android-apk.yml'
+    paths: [ 'android/**', 'core/**', '.github/workflows/android-apk.yml' ]
 
 concurrency:
   group: stylo-android-apk-${{ github.ref }}
@@ -31,19 +25,14 @@ jobs:
         uses: actions/checkout@v6
       - name: Set up JDK 17
         uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
+        with: { distribution: temurin, java-version: '17' }
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: ''
       - name: Install Android toolchain
         run: sdkmanager "platforms;android-${ANDROID_PLATFORM}" "build-tools;36.0.0" "cmake;${ANDROID_CMAKE_VERSION}" "ndk;${ANDROID_NDK_VERSION}"
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
+        with: { targets: aarch64-linux-android }
       - name: Build Rust Core
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
@@ -54,11 +43,10 @@ jobs:
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           cp core/target/aarch64-linux-android/release/libstylo_dsp_core.so android/app/src/main/jniLibs/arm64-v8a/
           file android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so
-          readelf -d android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so | grep SONAME
+          readelf -h android/app/src/main/jniLibs/arm64-v8a/libstylo_dsp_core.so | grep 'AArch64'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
-        with:
-          gradle-version: '9.5.0'
+        with: { gradle-version: '9.5.0' }
       - name: Build debug APK
         run: gradle -p android :app:assembleDebug --stacktrace
       - name: Verify native dependencies
