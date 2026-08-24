@@ -2,211 +2,64 @@ package com.stylo.dsp
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
+import android.graphics.*
+import android.media.*
+import android.media.audiofx.Equalizer
+import android.net.Uri
 import android.os.Bundle
 import android.os.Process
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Toast
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.log10
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.sin
-import kotlin.math.sqrt
+import android.widget.*
+import java.util.Locale
+import kotlin.math.*
 
 class MainActivity : Activity() {
-    private lateinit var view: EqView
+    private val model = EqModel()
+    private lateinit var graph: EqView
     private var recorder: AudioRecord? = null
-    private var thread: Thread? = null
+    private var audioThread: Thread? = null
     @Volatile private var running = false
+    private var player: MediaPlayer? = null
+    private var playerEq: Equalizer? = null
+    private var seek: SeekBar? = null
+    private var timeText: TextView? = null
+    private var titleText: TextView? = null
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        view = EqView()
-        setContentView(view)
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_AUDIO)
-        } else {
-            startAudio()
-        }
+    override fun onCreate(state: Bundle?) { super.onCreate(state); buildUi(); if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),10) else startAnalyzer() }
+
+    private fun buildUi() {
+        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(0xff090a0c.toInt())}
+        graph=EqView();root.addView(graph,LinearLayout.LayoutParams(-1,0,1f))
+        titleText=TextView(this).apply{text="Sin archivo · STYLO EQ";setTextColor(0xffb8c3c8.toInt());textSize=13f;setPadding(18,2,18,0)};root.addView(titleText)
+        seek=SeekBar(this).apply{max=1000;setPadding(18,0,18,0);setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{override fun onProgressChanged(s:SeekBar?,p:Int,from:Boolean){if(from)player?.let{if(it.duration>0)it.seekTo(it.duration*p/1000);updateTime()}};override fun onStartTrackingTouch(s:SeekBar?){};override fun onStopTrackingTouch(s:SeekBar?){} })};root.addView(seek,LinearLayout.LayoutParams(-1,42))
+        timeText=TextView(this).apply{text="00:00 / 00:00";gravity=Gravity.CENTER;setTextColor(0xffd9e4e8.toInt());textSize=12f};root.addView(timeText,LinearLayout.LayoutParams(-1,25))
+        val row=LinearLayout(this).apply{gravity=Gravity.CENTER};fun b(t:String,a:()->Unit)=Button(this).apply{text=t;setOnClickListener{a()}}
+        row.addView(b("📂"){openAudio()});row.addView(b("⏮"){player?.seekTo(max(0,(player?.currentPosition?:0)-10000))});row.addView(b("▶/⏸"){togglePlay()});row.addView(b("⏭"){player?.seekTo(min(player?.duration?:0,(player?.currentPosition?:0)+10000))});row.addView(b("A/B"){model.ab=!model.ab;graph.invalidate();applyEq()});root.addView(row,LinearLayout.LayoutParams(-1,52))
+        val eq=LinearLayout(this).apply{gravity=Gravity.CENTER};eq.addView(b("31-BAND"){model.parametricMode=false;model.selected=15;graph.invalidate();applyEq()});eq.addView(b("PARAM 8"){model.parametricMode=true;model.selected=0;graph.invalidate();applyEq()});eq.addView(b("BYPASS"){model.bypass=!model.bypass;graph.invalidate();applyEq()});eq.addView(b("RESET"){model.active.forEach{it.gain=0f};graph.invalidate();applyEq()});root.addView(eq,LinearLayout.LayoutParams(-1,52));setContentView(root)
     }
+    private fun openAudio(){startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{type="audio/*";addCategory(Intent.CATEGORY_OPENABLE)},42)}
+    override fun onActivityResult(r:Int,c:Int,d:Intent?){super.onActivityResult(r,c,d);if(r==42&&c==RESULT_OK)d?.data?.let{playUri(it)}}
+    private fun playUri(uri:Uri){releasePlayer();player=MediaPlayer.create(this,uri);player?.setOnCompletionListener{seek?.progress=1000};titleText?.text="STYLO EQ · ${uri.lastPathSegment?:"audio"}";setupEq();player?.start();updateTime()}
+    private fun setupEq(){try{playerEq=Equalizer(0,player?.audioSessionId?:0);playerEq?.enabled=true;applyEq()}catch(_:Throwable){}}
+    private fun applyEq(){val eq=playerEq?:return;val n=eq.numberOfBands.toInt();val lo=eq.bandLevelRange[0].toInt()/100f;val hi=eq.bandLevelRange[1].toInt()/100f;for(i in 0 until n){val f=eq.getCenterFreq(i.toShort())/1000.0;val band=model.active.minByOrNull{abs(ln(max(20.0,f)/it.freq))};val g=(band?.gain?:0f).coerceIn(lo,hi);try{eq.setBandLevel(i.toShort(),(g*100).toInt().toShort())}catch(_:Throwable){}}}
+    private fun togglePlay(){player?.let{if(it.isPlaying)it.pause()else it.start();updateTime()}}
+    private fun updateTime(){val p=player?:return;val cur=p.currentPosition;val dur=max(1,p.duration);seek?.progress=(cur*1000/dur).coerceIn(0,1000);timeText?.text="${fmt(cur)} / ${fmt(dur)}";seek?.postDelayed({if(player?.isPlaying==true)updateTime()},250)}
+    private fun fmt(ms:Int)=String.format(Locale.US,"%02d:%02d",ms/60000,(ms/1000)%60)
+    private fun startAnalyzer(){if(running)return;val rate=44100;val n=2048;val minBuf=AudioRecord.getMinBufferSize(rate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);if(minBuf<=0)return;recorder=AudioRecord(MediaRecorder.AudioSource.DEFAULT,rate,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT,max(minBuf,n*2));try{recorder?.startRecording()}catch(_:Throwable){return};running=true;audioThread=Thread{Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO);val samples=ShortArray(n);val mags=FloatArray(n/2);val fft=FastFft(n);while(running){val got=recorder?.read(samples,0,n)?:0;if(got>0){fft.magnitudeDb(samples,got,mags);graph.post{if(running)graph.setSpectrum(mags)}}}}.also{it.start()}}
+    override fun onRequestPermissionsResult(r:Int,p:Array<out String>,g:IntArray){super.onRequestPermissionsResult(r,p,g);if(r==10&&g.firstOrNull()==PackageManager.PERMISSION_GRANTED)startAnalyzer()}
+    override fun onDestroy(){running=false;try{recorder?.stop()}catch(_:Throwable){};recorder?.release();audioThread?.join(300);releasePlayer();super.onDestroy()}
+    private fun releasePlayer(){try{player?.stop()}catch(_:Throwable){};player?.release();player=null;playerEq?.release();playerEq=null}
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_AUDIO && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            startAudio()
-        } else {
-            Toast.makeText(this, "Se necesita el micrófono para el analizador", Toast.LENGTH_LONG).show()
-        }
+    private inner class EqView:View(this){private val p=Paint(Paint.ANTI_ALIAS_FLAG);private val path=Path();private val spectrum=FloatArray(1024);private var drag=false
+        fun setSpectrum(v:FloatArray){System.arraycopy(v,0,spectrum,0,min(v.size,spectrum.size));invalidate()}
+        private fun xToF(x:Float)=20.0*exp(ln(1000.0)*x/max(1f,width.toFloat()));private fun fToX(f:Double)=(ln(f/20.0)/ln(1000.0)*width).toFloat();private fun yToG(y:Float)=12f-24f*(y-height*.08f)/(height*.80f);private fun gToY(g:Double)=(height*.88f-(g+12.0)/24.0*height*.80f).toFloat()
+        override fun onDraw(c:Canvas){c.drawColor(0xff090a0c.toInt());val w=width.toFloat();val h=height.toFloat();p.style=Paint.Style.STROKE;p.strokeWidth=1f;p.color=0x30363c42;for(i in 0..10)c.drawLine(0f,h*.08f+i*h*.80f/10,w,h*.08f+i*h*.80f/10,p);for(f in doubleArrayOf(20.0,50.0,100.0,500.0,1000.0,5000.0,10000.0,20000.0)){val x=fToX(f);c.drawLine(x,h*.06f,x,h*.90f,p)}
+            p.color=0xaa67ddf2.toInt();p.strokeWidth=1.5f;path.reset();var started=false;for(i in 1 until spectrum.size){val f=i.toDouble()/spectrum.size*22050;if(f<20||f>20000)continue;val x=fToX(f);val db=spectrum[i].coerceIn(-80f,0f);val y=h*.88f-(db+80f)/80f*h*.76f;if(!started){path.moveTo(x,y);started=true}else path.lineTo(x,y)};c.drawPath(path,p)
+            p.color=0xffe9f4f7.toInt();p.strokeWidth=3f;path.reset();for(x in 0..w.toInt() step 4){val y=gToY(model.responseDb(xToF(x.toFloat())));if(x==0)path.moveTo(0f,y)else path.lineTo(x.toFloat(),y)};c.drawPath(path,p);p.style=Paint.Style.FILL;model.active.forEachIndexed{idx,b->p.color=if(idx==model.selected)0xff7de7ff.toInt()else 0xff789099.toInt();c.drawCircle(fToX(b.freq),gToY(b.gain.toDouble()),if(idx==model.selected)9f else 4f,p)}
+            p.color=0xffb8c3c8.toInt();p.textSize=24f;c.drawText("STYLO EQ",20f,30f,p);p.textSize=13f;c.drawText(if(model.parametricMode)"PARAMETRIC · 8 BANDS":"GRAPHIC · 31 BANDS",20f,49f,p);val b=model.active[model.selected];c.drawText("${b.freq.roundToInt()} Hz   ${"%+.1f".format(b.gain)} dB   Q ${"%.2f".format(b.q)}",20f,h-14f,p)}
+        override fun onTouchEvent(e:MotionEvent):Boolean{val f=xToF(e.x);when(e.actionMasked){MotionEvent.ACTION_DOWN->{model.selected=model.nearestBand(f);val b=model.active[model.selected];drag=abs(e.x-fToX(b.freq))<40&&abs(e.y-gToY(b.gain.toDouble()))<40;invalidate();return true};MotionEvent.ACTION_MOVE->if(drag){val b=model.active[model.selected];b.freq=xToF(e.x).coerceIn(20.0,20000.0);b.gain=yToG(e.y).coerceIn(-12f,12f);invalidate();applyEq();return true};MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{drag=false;return true}};return true}
     }
-
-    private fun startAudio() {
-        if (running) return
-        val rate = 44100
-        val n = 2048
-        val minBuffer = AudioRecord.getMinBufferSize(
-            rate,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT
-        )
-        if (minBuffer <= 0) {
-            Toast.makeText(this, "No se pudo inicializar el audio", Toast.LENGTH_LONG).show()
-            return
-        }
-        recorder = AudioRecord(
-            MediaRecorder.AudioSource.DEFAULT,
-            rate,
-            AudioFormat.CHANNEL_IN_MONO,
-            AudioFormat.ENCODING_PCM_16BIT,
-            max(minBuffer, n * 2)
-        )
-        try {
-            recorder?.startRecording()
-        } catch (_: Throwable) {
-            recorder?.release()
-            recorder = null
-            Toast.makeText(this, "No se pudo iniciar el micrófono", Toast.LENGTH_LONG).show()
-            return
-        }
-        running = true
-        thread = Thread {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_AUDIO)
-            val samples = ShortArray(n)
-            val mags = FloatArray(n / 2)
-            while (running) {
-                val got = recorder?.read(samples, 0, samples.size) ?: 0
-                if (got > 0) {
-                    val limit = min(got, samples.size)
-                    for (k in mags.indices) {
-                        var re = 0.0
-                        var im = 0.0
-                        for (i in 0 until limit) {
-                            val w = 0.5 - 0.5 * cos(2.0 * PI * i / max(1, limit - 1))
-                            val a = 2.0 * PI * k * i / limit
-                            val x = samples[i] / 32768.0 * w
-                            re += x * cos(a)
-                            im -= x * sin(a)
-                        }
-                        mags[k] = (20.0 * log10(max(1e-6, sqrt(re * re + im * im) / limit))).toFloat()
-                    }
-                    val frame = mags.copyOf()
-                    runOnUiThread { if (running) view.setSpectrum(frame) }
-                }
-            }
-        }.also { it.start() }
-    }
-
-    override fun onDestroy() {
-        running = false
-        thread?.join(250)
-        thread = null
-        try { recorder?.stop() } catch (_: Throwable) { }
-        recorder?.release()
-        recorder = null
-        super.onDestroy()
-    }
-
-    private inner class EqView : View(this) {
-        private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private var spectrum = FloatArray(1024)
-        private var freq = 1000.0
-        private var gain = 0.0
-        private var dragging = false
-
-        fun setSpectrum(v: FloatArray) { spectrum = v; invalidate() }
-        private fun xToFreq(x: Float, w: Float): Double = 20.0 * exp(ln(1000.0) * x / w)
-        private fun freqToX(f: Double, w: Float): Float = (ln(f / 20.0) / ln(1000.0) * w).toFloat()
-        private fun yToGain(y: Float, h: Float): Double = 12.0 - 24.0 * y / h
-        private fun gainToY(g: Double, h: Float): Float = ((12.0 - g) / 24.0 * h).toFloat()
-
-        override fun onDraw(c: android.graphics.Canvas) {
-            super.onDraw(c)
-            val w = width.toFloat()
-            val h = height.toFloat()
-            c.drawColor(android.graphics.Color.rgb(9, 10, 12))
-            paint.style = android.graphics.Paint.Style.STROKE
-            paint.strokeWidth = 1f
-            paint.color = 0x30363C42
-            for (i in 0..10) {
-                val y = h * 0.12f + i * h * 0.76f / 10f
-                c.drawLine(0f, y, w, y, paint)
-            }
-            val fs = floatArrayOf(20f, 100f, 1000f, 10000f, 20000f)
-            for (f in fs) {
-                val x = freqToX(f.toDouble(), w)
-                c.drawLine(x, h * 0.08f, x, h * 0.88f, paint)
-            }
-            paint.color = 0xAA67DDF2.toInt()
-            paint.strokeWidth = 2f
-            val path = android.graphics.Path()
-            var started = false
-            for (i in 1 until spectrum.size) {
-                val f = i.toDouble() / spectrum.size * 22050.0
-                if (f < 20 || f > 20000) continue
-                val x = freqToX(f, w)
-                val db = min(0f, max(-80f, spectrum[i]))
-                val y = h * 0.88f - (db + 80f) / 80f * h * 0.76f
-                if (!started) { path.moveTo(x, y); started = true } else path.lineTo(x, y)
-            }
-            c.drawPath(path, paint)
-            paint.color = 0xFFE9F4F7.toInt()
-            paint.strokeWidth = 4f
-            val nx = freqToX(freq, w)
-            val ny = gainToY(gain, h)
-            val curve = android.graphics.Path()
-            for (xi in 0..w.toInt() step 8) {
-                val f = xToFreq(xi.toFloat(), w)
-                val z = ln(f / freq) / ln(2.0)
-                val d = exp(-0.5 * (z * 3.0) * (z * 3.0))
-                val y = gainToY(gain * d, h)
-                if (xi == 0) curve.moveTo(0f, y) else curve.lineTo(xi.toFloat(), y)
-            }
-            c.drawPath(curve, paint)
-            paint.style = android.graphics.Paint.Style.FILL
-            paint.color = 0xFF7DE7FF.toInt()
-            c.drawCircle(nx, ny, 13f, paint)
-            paint.color = 0xFFB8C3C8.toInt()
-            paint.textSize = 28f
-            c.drawText("STYLO EQ", 24f, 42f, paint)
-            paint.textSize = 18f
-            c.drawText("${"%.0f".format(freq)} Hz   ${"%+.1f".format(gain)} dB", 24f, h - 58f, paint)
-            c.drawText("20 Hz", 10f, h - 22f, paint)
-            c.drawText("1 kHz", w / 2f - 25f, h - 22f, paint)
-            c.drawText("20 kHz", w - 75f, h - 22f, paint)
-        }
-
-        override fun onTouchEvent(e: MotionEvent): Boolean {
-            val w = width.toFloat()
-            val h = height.toFloat()
-            val nx = freqToX(freq, w)
-            val ny = gainToY(gain, h)
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    dragging = abs(e.x - nx) < 40 && abs(e.y - ny) < 40
-                    return true
-                }
-                MotionEvent.ACTION_MOVE -> if (dragging) {
-                    freq = min(20000.0, max(20.0, xToFreq(e.x, w)))
-                    gain = min(12.0, max(-12.0, yToGain(e.y, h)))
-                    invalidate()
-                    return true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    dragging = false
-                    return true
-                }
-            }
-            return true
-        }
-    }
-
-    companion object { private const val REQUEST_AUDIO = 10 }
 }
