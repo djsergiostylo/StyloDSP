@@ -30,16 +30,31 @@ class MainActivity : Activity() {
     private val prefs by lazy{getSharedPreferences("stylo_eq",0)}
 
     override fun onCreate(state:Bundle?){super.onCreate(state);audioEq=AudioEqProcessor(model);loadPreset();buildUi();if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO),10)else startAnalyzer()}
-    private fun button(label:String,action:()->Unit)=Button(this).apply{text=label;setOnClickListener{action()}}
-    private fun buildUi(){
-        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(0xff090a0c.toInt())};graph=EqView();root.addView(graph,LinearLayout.LayoutParams(-1,0,1f))
-        titleText=TextView(this).apply{text="Sin archivo · STYLO EQ";setTextColor(0xffb8c3c8.toInt());textSize=13f;setPadding(18,2,18,0)};root.addView(titleText)
-        seek=SeekBar(this).apply{max=1000;setPadding(18,0,18,0);setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{override fun onProgressChanged(s:SeekBar?,p:Int,from:Boolean){if(from)player?.let{if(it.duration>0)it.seekTo(it.duration*p/1000)}};override fun onStartTrackingTouch(s:SeekBar?){ };override fun onStopTrackingTouch(s:SeekBar?){}})};root.addView(seek,LinearLayout.LayoutParams(-1,42))
-        timeText=TextView(this).apply{text="00:00 / 00:00";gravity=Gravity.CENTER;setTextColor(0xffd9e4e8.toInt());textSize=12f};root.addView(timeText,LinearLayout.LayoutParams(-1,25))
-        val transport=LinearLayout(this).apply{gravity=Gravity.CENTER};transport.addView(button("📂"){openAudio()});transport.addView(button("⏮"){player?.seekTo(max(0,(player?.currentPosition?:0)-10000))});transport.addView(button("▶/⏸"){togglePlay()});transport.addView(button("⏭"){player?.seekTo(min(player?.duration?:0,(player?.currentPosition?:0)+10000))});transport.addView(button("A/B"){model.ab=!model.ab;refresh()});root.addView(transport,LinearLayout.LayoutParams(-1,52))
-        val eq=LinearLayout(this).apply{gravity=Gravity.CENTER};eq.addView(button("31-BAND"){model.parametricMode=false;model.selected=15;refresh()});eq.addView(button("PARAM 8"){model.parametricMode=true;model.selected=0;refresh()});eq.addView(button("TYPE"){cycleType();refresh()});eq.addView(button("BYPASS"){model.bypass=!model.bypass;refresh()});eq.addView(button("RESET"){resetActive();refresh()});root.addView(eq,LinearLayout.LayoutParams(-1,52))
-        val presets=LinearLayout(this).apply{gravity=Gravity.CENTER};presets.addView(button("SAVE"){savePreset()});presets.addView(button("LOAD"){loadPreset();refresh()});presets.addView(button("FLAT"){resetActive();refresh()});root.addView(presets,LinearLayout.LayoutParams(-1,48));setContentView(root)
+
+    private fun button(label:String,action:()->Unit)=Button(this).apply{
+        text=label;setTextSize(12f);isAllCaps=false;minHeight=44;minWidth=0;setPadding(4,0,4,0);setOnClickListener{action()}
     }
+    private fun controlRow(labels:List<Pair<String,()->Unit>>):LinearLayout=LinearLayout(this).apply{
+        orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER;setPadding(8,2,8,2)
+        labels.forEach{(label,action)->addView(button(label,action),LinearLayout.LayoutParams(0,48,1f).apply{setMargins(3,0,3,0)})}
+    }
+
+    private fun buildUi(){
+        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setBackgroundColor(0xff090a0c.toInt())}
+        graph=EqView();root.addView(graph,LinearLayout.LayoutParams(-1,0,1f))
+        titleText=TextView(this).apply{text="Sin archivo · STYLO EQ";setTextColor(0xffb8c3c8.toInt());textSize=13f;setPadding(18,2,18,0);maxLines=1;ellipsize=android.text.TextUtils.TruncateAt.END}
+        root.addView(titleText,LinearLayout.LayoutParams(-1,28))
+        seek=SeekBar(this).apply{max=1000;setPadding(18,0,18,0);setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener{override fun onProgressChanged(s:SeekBar?,p:Int,from:Boolean){if(from)player?.let{if(it.duration>0)it.seekTo(it.duration*p/1000)}};override fun onStartTrackingTouch(s:SeekBar?){ };override fun onStopTrackingTouch(s:SeekBar?){}})}
+        root.addView(seek,LinearLayout.LayoutParams(-1,38))
+        timeText=TextView(this).apply{text="00:00 / 00:00";gravity=Gravity.CENTER;setTextColor(0xffd9e4e8.toInt());textSize=12f}
+        root.addView(timeText,LinearLayout.LayoutParams(-1,24))
+        root.addView(controlRow(listOf("📂" to {openAudio()},"⏮ 10s" to {player?.seekTo(max(0,(player?.currentPosition?:0)-10000))},"▶ / ⏸" to {togglePlay()},"10s ⏭" to {player?.seekTo(min(player?.duration?:0,(player?.currentPosition?:0)+10000))},"A / B" to {model.ab=!model.ab;refresh()})),LinearLayout.LayoutParams(-1,54))
+        root.addView(controlRow(listOf("31 BAND" to {model.parametricMode=false;model.selected=15;refresh()},"PARAM 8" to {model.parametricMode=true;model.selected=0;refresh()},"TYPE" to {cycleType();refresh()})),LinearLayout.LayoutParams(-1,54))
+        root.addView(controlRow(listOf("BYPASS" to {model.bypass=!model.bypass;refresh()},"RESET" to {resetActive();refresh()})),LinearLayout.LayoutParams(-1,54))
+        root.addView(controlRow(listOf("SAVE" to {savePreset()},"LOAD" to {loadPreset();refresh()},"FLAT" to {resetActive();refresh()})),LinearLayout.LayoutParams(-1,54))
+        setContentView(root)
+    }
+
     private fun refresh(){graph.invalidate();audioEq.apply()}
     private fun resetActive(){model.active.forEach{it.gain=0f;it.type=EqModel.Type.PEAK;it.q=1f}}
     private fun cycleType(){val b=model.active[model.selected];val types=EqModel.Type.values();b.type=types[(b.type.ordinal+1)%types.size]}
