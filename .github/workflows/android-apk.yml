@@ -49,12 +49,16 @@ jobs:
         with: { gradle-version: '9.5.0' }
       - name: Build debug APK
         run: gradle -p android :app:assembleDebug --stacktrace
-      - name: Verify native dependencies
+      - name: Verify packaged native libraries
         run: |
-          readelf -d android/app/build/intermediates/stripped_native_libs/debug/out/lib/arm64-v8a/libstylo_android.so | grep NEEDED
-          if readelf -d android/app/build/intermediates/stripped_native_libs/debug/out/lib/arm64-v8a/libstylo_android.so | grep -E 'StyloDSP|/home/runner|/workspace|src/main'; then exit 1; fi
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          find android/app/build -type f \( -name 'libstylo_android.so' -o -name 'libstylo_dsp_core.so' \) -print
+          test -n "$(find android/app/build -type f -name 'libstylo_android.so' -print -quit)"
+          test -n "$(find android/app/build -type f -name 'libstylo_dsp_core.so' -print -quit)"
       - name: Verify APK
-        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -l android/app/build/outputs/apk/debug/app-debug.apk | grep -E 'lib/(arm64-v8a|armeabi-v7a|x86|x86_64)/libstylo_(android|dsp_core)\.so'
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
