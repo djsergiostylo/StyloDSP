@@ -8,7 +8,7 @@ import kotlin.math.log10
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/** Realtime DSP primitives. Allocation-free in process(). */
+/** Realtime DSP primitives. process() performs no heap allocation. */
 class Fft(private val size: Int) {
     private val real = DoubleArray(size)
     private val imag = DoubleArray(size)
@@ -124,7 +124,7 @@ class Biquad(private val sampleRate: Double) {
     fun reset(){z1=0.0;z2=0.0}
 }
 
-/** Dynamic filter bank. Rebuilds filters only when the control-side band list changes. */
+/** Dynamic filter bank. Control changes rebuild/configure outside process(). */
 class EqBank(private val sampleRate: Double, initialBands: List<EqBand> = emptyList()) {
     private var bands = initialBands.map { it.copy() }
     private var filters: Array<Biquad> = Array(bands.size) { Biquad(sampleRate) }
@@ -138,4 +138,16 @@ class EqBank(private val sampleRate: Double, initialBands: List<EqBand> = emptyL
     fun configureAll() { bands.forEachIndexed { i, b -> filters[i].configure(b) } }
     fun process(x: Double): Double { var y=x; for (f in filters) y=f.process(y); return y }
     fun reset(){ filters.forEach { it.reset() } }
+}
+
+/** Simple safety stage. It never allocates and only limits overs. */
+class SafetyLimiter(private val drive: Double = 1.0) {
+    fun process(x: Double): Double {
+        val y = x * drive
+        return when {
+            y > 1.0 -> 1.0
+            y < -1.0 -> -1.0
+            else -> y
+        }
+    }
 }
