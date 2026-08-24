@@ -10,6 +10,7 @@ import android.media.audiofx.Equalizer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Process
+import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.widget.*
@@ -59,7 +60,7 @@ class MainActivity : Activity() {
         override fun onDraw(c:Canvas){c.drawColor(0xff090a0c.toInt());val w=width.toFloat();val h=height.toFloat();p.style=Paint.Style.STROKE;p.strokeWidth=1f;p.color=0x30363c42;for(i in 0..10)c.drawLine(0f,h*.08f+i*h*.80f/10,w,h*.08f+i*h*.80f/10,p);for(f in doubleArrayOf(20.0,50.0,100.0,500.0,1000.0,5000.0,10000.0,20000.0)){val x=fToX(f);c.drawLine(x,h*.06f,x,h*.90f,p)}
             p.color=0xaa67ddf2.toInt();p.strokeWidth=1.5f;path.reset();var started=false;for(i in 1 until spectrum.size){val f=i.toDouble()/spectrum.size*22050;if(f<20||f>20000)continue;val x=fToX(f);val db=spectrum[i].coerceIn(-80f,0f);val y=h*.88f-(db+80f)/80f*h*.76f;if(!started){path.moveTo(x,y);started=true}else path.lineTo(x,y)};c.drawPath(path,p)
             p.color=0xffe9f4f7.toInt();p.strokeWidth=3f;path.reset();for(x in 0..w.toInt() step 4){val y=gToY(model.responseDb(xToF(x.toFloat())));if(x==0)path.moveTo(0f,y)else path.lineTo(x.toFloat(),y)};c.drawPath(path,p);p.style=Paint.Style.FILL;model.active.forEachIndexed{idx,b->p.color=if(idx==model.selected)0xff7de7ff.toInt()else 0xff789099.toInt();c.drawCircle(fToX(b.freq),gToY(b.gain.toDouble()),if(idx==model.selected)9f else 4f,p)}
-            p.color=0xffb8c3c8.toInt();p.textSize=24f;c.drawText("STYLO EQ",20f,30f,p);p.textSize=13f;c.drawText(if(model.parametricMode)"PARAMETRIC · 8 BANDS":"GRAPHIC · 31 BANDS",20f,49f,p);val b=model.active[model.selected];c.drawText("${b.freq.roundToInt()} Hz   ${"%+.1f".format(b.gain)} dB   Q ${"%.2f".format(b.q)}",20f,h-14f,p)}
+            p.color=0xffb8c3c8.toInt();p.textSize=24f;c.drawText("STYLO EQ",20f,30f,p);p.textSize=13f;val mode=if(model.parametricMode)"PARAMETRIC · 8 BANDS" else "GRAPHIC · 31 BANDS";c.drawText(mode,20f,49f,p);val b=model.active[model.selected];c.drawText("${b.freq.roundToInt()} Hz   ${"%+.1f".format(b.gain)} dB   Q ${"%.2f".format(b.q)}",20f,h-14f,p)}
         override fun onTouchEvent(e:MotionEvent):Boolean{val f=xToF(e.x);when(e.actionMasked){MotionEvent.ACTION_DOWN->{model.selected=model.nearestBand(f);val b=model.active[model.selected];drag=abs(e.x-fToX(b.freq))<40&&abs(e.y-gToY(b.gain.toDouble()))<40;invalidate();return true};MotionEvent.ACTION_MOVE->if(drag){val b=model.active[model.selected];b.freq=xToF(e.x).coerceIn(20.0,20000.0);b.gain=yToG(e.y).coerceIn(-12f,12f);invalidate();applyEq();return true};MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL->{drag=false;return true}};return true}
     }
 }
