@@ -1,131 +1,162 @@
 # STYLO DSP — BRANCH INVENTORY / SECOND RADIOGRAPHY
 
-**Date:** 2026-08-25
-**Scope:** historical branch classification with focused inspection of Android/Rust/EQ lines.
+**Date:** 2026-08-25  
+**Scope:** historical branch classification with focused inspection of Android/Rust/EQ/Harness lines.  
 **Authority:** audit evidence only. This document does not override canonical STATE, ARCHITECTURE, ROADMAP or VALIDATION_PROTOCOL.
 
-## Critical correction
+## Critical generation distinction
 
 The repository contains a historical, physically device-validated Android/Rust milestone that must not be confused with the current `main` runtime state.
 
-`android-v0.2.0-validated` documents physical-device validation of an APK produced from `prototype/android-apk`. The architecture was:
+`android-v0.2.0-validated` documents physical-device validation of an APK produced from `prototype/android-apk`. Its architecture was:
 
 `Android → Oboe/AAudio → Native bridge/FFI → STYLO DSP Core (Rust) → Gain (f32)`.
 
 The historical validation records an `UnsatisfiedLinkError` caused by an absolute CI-runner ELF dependency and a subsequent SONAME/DT_NEEDED correction. It records build commit `85f4bdbf6030cbc3d83903874c0e01e033bb80fb`, Actions run `31965884079`, and `arm64-v8a`. This is V0.2.0 historical validation evidence, not proof that the latest `main` APK has the same runtime path or is already validated.
 
-## `core-rust`
+## High-value technical/product branches already inspected
 
-**Disposition:** `KEEP / RECOVER SELECTIVELY`
+### `core-rust`
 
-Comparison against `main`: 3 commits ahead of the shared merge base and 68 commits behind current `main`.
+**Disposition:** `KEEP / RECOVER SELECTIVELY`  
+**Comparison:** 3 commits ahead of shared merge base, 68 behind current `main`.
 
-### Exclusive commits
+Unique work:
+- Rust DSP Core scaffold (`core/Cargo.toml`, `rlib` + `cdylib`).
+- In-place `f32` Gain processor with unit tests.
+- Prototype README defining PCM → Core → Gain → PCM and pending platform adapters.
 
-1. `23ce61d5...` — `core: scaffold Rust DSP core`
-   - adds `core/Cargo.toml`;
-   - package `stylo-dsp-core`;
-   - `rlib` + `cdylib` outputs;
-   - establishes the platform-independent Core crate.
+**Action:** preserve; later evaluate selective recovery after current-main validation and API-boundary review.
 
-2. `e3357e4e...` — `core: add realtime-safe gain processor`
-   - adds `core/src/lib.rs`;
-   - `Gain` uses `f32`;
-   - in-place buffer processing;
-   - unit tests for unity, expected samples and finite values.
+### `android-v0.2.0-validated`
 
-3. `3badc0f9...` — `core: document first Rust prototype`
-   - adds `core/README.md`;
-   - defines PCM → Core → Gain → PCM as the first target;
-   - records Android/Web/VST3 adapters as pending;
-   - records TypeScript as reference until parity.
+**Disposition:** `KEEP AS HISTORICAL VALIDATION REFERENCE / RECOVER SELECTIVELY`  
+**Comparison:** 24 commits ahead of shared merge base, 68 behind current `main`.
 
-### Assessment
+Contains Android native bridge, CMake, Java UI, Rust Core and explicit physical-device validation evidence including the ELF/SONAME correction.
 
-Real engineering work worth preserving, but only a first Core/Gain slice, not a complete replacement for the current Android DSP path.
+**Action:** preserve as historical reference; extract proven build/runtime lessons and compare unique native/Rust code before recovery.
 
-**Action:** keep branch; later evaluate cherry-picking Core/Gain after current-main validation and API-boundary review.
+### `android-gain-realtime`
 
-## `android-v0.2.0-validated`
+**Disposition:** `KEEP / INVESTIGATE DEEPLY`  
+**Comparison:** 33 commits ahead of shared merge base, 68 behind current `main`.
 
-**Disposition:** `KEEP AS HISTORICAL VALIDATION REFERENCE / RECOVER SELECTIVELY`
+Contains a substantial Android/Rust/native slice, dedicated workflow, native bridge, Rust Core, validation documentation, dependency audit and realtime gain gate.
 
-Comparison against `main`: 24 commits ahead of the shared merge base and 68 commits behind current `main`.
+**Action:** high-priority source for recovering integration lessons. Do not merge blindly.
 
-The branch contains Android native C++ bridge, CMake/native build configuration, Java Android UI, Rust Core and validation documentation.
+### `prod/full-eq-v1`
 
-Its `docs/ANDROID_V0.2.0_VALIDATED.md` provides explicit physical-device validation evidence and the ELF/SONAME fix.
+**Disposition:** `ARCHIVE / EXTRACT SELECTIVELY`  
+**Comparison:** 16 commits ahead of shared merge base, 49 behind current `main`.
 
-### Assessment
+Contains older `AudioEqProcessor.kt`, `EqModel.kt`, `FastFft.kt` and a different `MainActivity.kt` generation.
 
-This proves the project previously achieved a device-validated Android/Rust/Gain path. It is therefore not merely a hypothetical prototype. Its age and divergence mean it is not automatically the current canonical implementation.
+**Action:** preserve historical EQ/UI/FFT knowledge; do not mix directly into the current PCM path.
 
-**Action:** preserve as historical reference; extract build/runtime lessons and compare unique native/Rust code before any cleanup.
+### `v0.2.1-stylo-eq-mvp`
 
-## `android-gain-realtime`
+**Disposition:** `KEEP / AUDIT AS PRODUCT-HISTORY SOURCE`  
+**Comparison:** 19 commits ahead of shared merge base, 57 behind current `main`.
 
-**Disposition:** `KEEP / INVESTIGATE DEEPLY`
+Represents a product-definition/MVP generation with spectrum EQ vertical-slice intent, product vision, UI specification, production planning and earlier Harness/version snapshots.
 
-Comparison against `main`: 33 commits ahead of the shared merge base and 68 behind current `main`.
+**Action:** preserve product/spec decisions as history; recover implementation only after source-level comparison.
 
-The branch contains a substantial Android/Rust/native slice including `.cargo/config.toml`, a dedicated Android workflow, Android Gradle/CMake/native bridge, Java `MainActivity`, Rust `core/Cargo.toml` and `core/src/lib.rs`, validation documentation, dependency audit and realtime gain gate documentation.
+### `v0.2.2-first-apk-mvp`
 
-**Action:** high priority. This is likely the richest historical source for understanding the validated Android/Rust Gain integration. Do not merge blindly.
+**Disposition:** `KEEP / AUDIT AS APK-HISTORY SOURCE`  
+**Comparison:** 28 commits ahead of shared merge base, 57 behind current `main`.
 
-## `prod/full-eq-v1`
+Contains earlier Android APK application, native CMake bridge, `native-lib.cpp`, early Rust Core and product/Harness material.
 
-**Disposition:** `ARCHIVE / EXTRACT SELECTIVELY`
+**Action:** preserve APK/build/native evidence separately; compare with `core-rust`, `android-gain-realtime` and current Android before recovery.
 
-Comparison against `main`: 16 commits ahead of the shared merge base and 49 behind current `main`.
+## Additional branches now compared
 
-Unique files include `AudioEqProcessor.kt`, `EqModel.kt`, `FastFft.kt`, a different `MainActivity.kt` generation and workflow changes.
+### `prototype/android-apk`
 
-This is valuable historical EQ/UI/FFT work but belongs to an older Android generation and should not be mixed into the current PCM pipeline without evidence.
+**Disposition:** `KEEP AS HISTORICAL PARENT / VALIDATION SOURCE`  
+**Comparison:** 23 commits ahead, 68 behind current `main`.
 
-## `v0.2.1-stylo-eq-mvp`
+Unique tree includes Android Gradle/manifest, CMake/native bridge, Java `MainActivity`, Android workflow, Rust Core and Cargo configuration. This is the parent/reference line associated with the historical V0.2.0 validated APK.
 
-**Disposition:** `KEEP / AUDIT AS PRODUCT-HISTORY SOURCE`
+**Action:** preserve. Do not duplicate its implementation into `main`; use it as historical source for the validated native/Rust path.
 
-Comparison against `main`: 19 commits ahead of the shared merge base and 57 behind current `main`.
+### `prototype/android-apk-v2`
 
-Its first exclusive commit explicitly redefined v0.2 as a mobile spectrum EQ vertical slice. The branch therefore represents a product-definition/MVP generation, not merely an implementation fork.
+**Disposition:** `KEEP / COMPARE WITH V0.2.0`  
+**Comparison:** 21 commits ahead, 68 behind current `main`.
 
-### Branch-only evidence identified by comparison
+Unique tree includes Android Gradle/manifest, CMake/native bridge, Kotlin `MainActivity`, workflow and an early Rust Core with README.
 
-- Earlier Android application and launcher structure.
-- `docs/STYLO_EQ_PRODUCT_VISION.md`.
-- `docs/STYLO_EQ_UI_SPEC.md`.
-- `docs/PRODUCTION_PLAN.md`.
-- `docs/REFERENCE_PATTERNS.md`.
-- Earlier Harness state/roadmap/version snapshots.
+**Action:** preserve while comparing differences against `prototype/android-apk` and `android-v0.2.0-validated`. No automatic merge.
 
-**Action:** preserve the product/spec decisions as historical evidence. Do not promote duplicate AI/Harness state documents into canonical status. Recover code only after source-level comparison against current architecture.
+### `ci/android-build-verification`
 
-## `v0.2.2-first-apk-mvp`
+**Disposition:** `ARCHIVE AFTER CI AUDIT`  
+**Comparison:** 2 commits ahead, 49 behind current `main`.
 
-**Disposition:** `KEEP / AUDIT AS APK-HISTORY SOURCE`
+Unique changes are limited to an Android workflow adjustment and `harness/CI_BUILD_CHECK.md`.
 
-Comparison against `main`: 28 commits ahead of the shared merge base and 57 behind current `main`.
+**Action:** inspect whether the CI check remains useful; otherwise archive after evidence is recorded.
 
-### Branch-only evidence identified by comparison
+### `pre-final-build-2026-08-24`
 
-- Earlier Android APK application.
-- Native CMake bridge and `native-lib.cpp`.
-- Early Rust `core/Cargo.toml` and `core/src/lib.rs`.
-- Product vision/UI/reference documentation.
-- Earlier Harness state/roadmap/version snapshots.
+**Disposition:** `ARCHIVE / CHECKPOINT`  
+**Comparison:** 0 unique commits against current `main`; it is 19 commits behind.
 
-**Action:** preserve APK/build/native integration evidence separately from current `main`. Compare native/Rust source with `core-rust` and `android-gain-realtime` before considering recovery.
+**Action:** preserve as a historical pointer/checkpoint; no code recovery indicated by the comparison.
 
-## Other important branches
+### `v0.2-harness-pilot`
 
-| Branch | Classification | Immediate action |
+**Disposition:** `ARCHIVE AS HARNESS HISTORY / EXTRACT DECISIONS`  
+**Comparison:** 9 commits ahead, 57 behind current `main`.
+
+Its unique work is primarily early AI/Harness/product documentation: `docs/AI_CONTEXT.md`, product vision/UI spec/reference patterns, early Harness context/state/roadmap/features.
+
+**Action:** preserve decisions as historical evidence. Do not restore duplicate Harness documents as competing canonical sources.
+
+## Branches not yet source-compared in this pass
+
+These remain explicitly **PENDING**, not classified by guesswork:
+
+| Branch | Current disposition | Next action |
 |---|---|---|
-| `prototype/android-apk` | Parent/reference for historical V0.2.0 | Preserve |
-| `prototype/android-apk-v2` | Historical prototype | Audit |
-| `ci/android-build-verification` | Superseded CI line | Preserve until final classification |
-| `pre-final-build-2026-08-24` | Historical checkpoint | Preserve |
-| Harness/checkpoint branches | Historical process state | Audit after product branches |
+| `v0.2-harness-pilot-checkpoint` | PENDING | Compare against `v0.2-harness-pilot` |
+| `v0.2-harness-pilot-rollback` | PENDING | Compare against pilot/checkpoint |
+| `audit/second-radiography` | PENDING / audit history | Inspect only for unique evidence before archive |
+| `audit/persistence-check-2026-08-25` | PENDING / audit history | Compare with newer persistence checkpoint |
+| `audit/persistence-check-2026-08-25b` | PENDING / audit history | Compare with prior persistence checkpoint |
+| `audit/branch-inventory-2026-08-25` | PENDING / audit workspace | Preserve until this audit is finalized |
+
+No branch in this section should be deleted or renamed yet.
+
+## Complete branch inventory
+
+Current repository branch list at the time of this audit:
+
+1. `android-gain-realtime`
+2. `android-v0.2.0-validated`
+3. `audit/branch-inventory-2026-08-25`
+4. `audit/persistence-check-2026-08-25b`
+5. `audit/persistence-check-2026-08-25`
+6. `audit/second-radiography`
+7. `checkpoint/pre-harness-next-step-2026-08-24`
+8. `ci/android-build-verification`
+9. `core-rust`
+10. `docs/ai-project-memory`
+11. `main`
+12. `pre-final-build-2026-08-24`
+13. `prod/full-eq-v1`
+14. `prototype/android-apk`
+15. `prototype/android-apk-v2`
+16. `v0.2-harness-pilot`
+17. `v0.2-harness-pilot-checkpoint`
+18. `v0.2-harness-pilot-rollback`
+19. `v0.2.1-stylo-eq-mvp`
+20. `v0.2.2-first-apk-mvp`
 
 ## Version nomenclature decision
 
@@ -135,11 +166,12 @@ Future official product releases should use tags/releases such as `V0.x.x`. Deve
 
 ## Current conclusion
 
-The second radiography establishes at least four relevant technical/product generations:
+The second radiography now establishes four major generations plus a Harness-history layer:
 
-1. **Historical V0.2.0 Android/Rust/Gain path:** physically validated, with native ELF packaging fix.
-2. **Historical mobile spectrum EQ MVP/APK lines:** `v0.2.1-stylo-eq-mvp` and `v0.2.2-first-apk-mvp` document product and APK evolution.
-3. **Historical full-EQ Android generation:** system/software EQ + FFT + older UI implementation.
-4. **Current `main` Kotlin/PCM/DSP generation:** more recent and more feature-rich, but latest runtime still needs current-device validation.
+1. **Historical V0.2.0 Android/Rust/Gain:** physically validated, with native ELF packaging fix.
+2. **Historical mobile spectrum EQ MVP/APK:** V0.2.1 and V0.2.2 product/APK evolution.
+3. **Historical full-EQ Android:** older EQ/FFT/UI generation.
+4. **Current `main` Kotlin/PCM/DSP:** newer active path, latest runtime still pending.
+5. **Harness-history branches:** valuable for decisions but must not override the current canonical Harness.
 
-The goal is not to merge these generations wholesale. It is to recover the best proven components, decisions and lessons while maintaining one canonical current path.
+The goal is not to merge generations wholesale. It is to recover proven components, decisions and lessons while maintaining one canonical current path.
