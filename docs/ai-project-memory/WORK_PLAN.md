@@ -46,8 +46,10 @@ Finish documentation/harness reconciliation before modifying product code, with 
 - [x] Verify branch inventory read-back after update.
 - [x] Compare `prototype/android-apk`, `prototype/android-apk-v2`, `ci/android-build-verification`, `pre-final-build-2026-08-24` and `v0.2-harness-pilot` against `main`.
 - [x] Expand branch inventory to all 20 currently listed branches and explicitly mark uninspected branches as PENDING.
+- [x] Compare `v0.2-harness-pilot-checkpoint` and `v0.2-harness-pilot-rollback`; both have zero unique commits/files against `main`.
+- [x] Compare `audit/second-radiography`, both persistence checkpoints, and `audit/branch-inventory-2026-08-25` against `main`.
+- [x] Resolve remaining branch classifications in the branch inventory without merging audit branches wholesale.
 - [x] Preserve branch disposition as evidence; no branch deletion or rename performed.
-- [ ] Compare remaining pending audit/checkpoint branches.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
