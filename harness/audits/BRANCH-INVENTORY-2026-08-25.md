@@ -17,121 +17,110 @@ The historical validation records an `UnsatisfiedLinkError` caused by an absolut
 ## High-value technical/product branches already inspected
 
 ### `core-rust`
-
 **Disposition:** `KEEP / RECOVER SELECTIVELY`  
 **Comparison:** 3 commits ahead of shared merge base, 68 behind current `main`.
 
-Unique work:
-- Rust DSP Core scaffold (`core/Cargo.toml`, `rlib` + `cdylib`).
-- In-place `f32` Gain processor with unit tests.
-- Prototype README defining PCM → Core → Gain → PCM and pending platform adapters.
-
-**Action:** preserve; later evaluate selective recovery after current-main validation and API-boundary review.
+Unique work: Rust DSP Core scaffold, in-place `f32` Gain processor with tests, and prototype architecture README. Preserve; evaluate selective recovery only after current-main validation and API-boundary review.
 
 ### `android-v0.2.0-validated`
-
 **Disposition:** `KEEP AS HISTORICAL VALIDATION REFERENCE / RECOVER SELECTIVELY`  
 **Comparison:** 24 commits ahead of shared merge base, 68 behind current `main`.
 
-Contains Android native bridge, CMake, Java UI, Rust Core and explicit physical-device validation evidence including the ELF/SONAME correction.
-
-**Action:** preserve as historical reference; extract proven build/runtime lessons and compare unique native/Rust code before recovery.
+Contains Android native bridge, CMake, Java UI, Rust Core and explicit physical-device validation evidence including the ELF/SONAME correction. Preserve as historical reference and extract proven build/runtime lessons before recovery.
 
 ### `android-gain-realtime`
-
 **Disposition:** `KEEP / INVESTIGATE DEEPLY`  
 **Comparison:** 33 commits ahead of shared merge base, 68 behind current `main`.
 
-Contains a substantial Android/Rust/native slice, dedicated workflow, native bridge, Rust Core, validation documentation, dependency audit and realtime gain gate.
-
-**Action:** high-priority source for recovering integration lessons. Do not merge blindly.
+Contains a substantial Android/Rust/native slice, dedicated workflow, native bridge, Rust Core, validation documentation, dependency audit and realtime gain gate. Do not merge blindly.
 
 ### `prod/full-eq-v1`
-
 **Disposition:** `ARCHIVE / EXTRACT SELECTIVELY`  
 **Comparison:** 16 commits ahead of shared merge base, 49 behind current `main`.
 
-Contains older `AudioEqProcessor.kt`, `EqModel.kt`, `FastFft.kt` and a different `MainActivity.kt` generation.
-
-**Action:** preserve historical EQ/UI/FFT knowledge; do not mix directly into the current PCM path.
+Contains older `AudioEqProcessor.kt`, `EqModel.kt`, `FastFft.kt` and another `MainActivity.kt` generation. Preserve historical EQ/UI/FFT knowledge; do not mix directly into the current PCM path.
 
 ### `v0.2.1-stylo-eq-mvp`
-
 **Disposition:** `KEEP / AUDIT AS PRODUCT-HISTORY SOURCE`  
 **Comparison:** 19 commits ahead of shared merge base, 57 behind current `main`.
 
-Represents a product-definition/MVP generation with spectrum EQ vertical-slice intent, product vision, UI specification, production planning and earlier Harness/version snapshots.
-
-**Action:** preserve product/spec decisions as history; recover implementation only after source-level comparison.
+Product-definition/MVP generation with spectrum EQ intent, product vision, UI specification, production planning and earlier Harness snapshots. Preserve decisions as history; recover implementation only after source comparison.
 
 ### `v0.2.2-first-apk-mvp`
-
 **Disposition:** `KEEP / AUDIT AS APK-HISTORY SOURCE`  
 **Comparison:** 28 commits ahead of shared merge base, 57 behind current `main`.
 
-Contains earlier Android APK application, native CMake bridge, `native-lib.cpp`, early Rust Core and product/Harness material.
+Contains earlier Android APK application, native CMake bridge, `native-lib.cpp`, early Rust Core and product/Harness material. Preserve evidence separately and compare before recovery.
 
-**Action:** preserve APK/build/native evidence separately; compare with `core-rust`, `android-gain-realtime` and current Android before recovery.
-
-## Additional branches now compared
+## Additional branches compared
 
 ### `prototype/android-apk`
-
 **Disposition:** `KEEP AS HISTORICAL PARENT / VALIDATION SOURCE`  
 **Comparison:** 23 commits ahead, 68 behind current `main`.
 
-Unique tree includes Android Gradle/manifest, CMake/native bridge, Java `MainActivity`, Android workflow, Rust Core and Cargo configuration. This is the parent/reference line associated with the historical V0.2.0 validated APK.
-
-**Action:** preserve. Do not duplicate its implementation into `main`; use it as historical source for the validated native/Rust path.
+Android Gradle/manifest, CMake/native bridge, Java `MainActivity`, Android workflow, Rust Core and Cargo configuration. This is the parent/reference line associated with historical V0.2.0 validation. Preserve; do not duplicate its implementation into `main`.
 
 ### `prototype/android-apk-v2`
-
 **Disposition:** `KEEP / COMPARE WITH V0.2.0`  
 **Comparison:** 21 commits ahead, 68 behind current `main`.
 
-Unique tree includes Android Gradle/manifest, CMake/native bridge, Kotlin `MainActivity`, workflow and an early Rust Core with README.
-
-**Action:** preserve while comparing differences against `prototype/android-apk` and `android-v0.2.0-validated`. No automatic merge.
+Android Gradle/manifest, CMake/native bridge, Kotlin `MainActivity`, workflow and early Rust Core. Preserve while comparing with `prototype/android-apk` and `android-v0.2.0-validated`.
 
 ### `ci/android-build-verification`
-
 **Disposition:** `ARCHIVE AFTER CI AUDIT`  
 **Comparison:** 2 commits ahead, 49 behind current `main`.
 
-Unique changes are limited to an Android workflow adjustment and `harness/CI_BUILD_CHECK.md`.
-
-**Action:** inspect whether the CI check remains useful; otherwise archive after evidence is recorded.
+Unique changes are limited to an Android workflow adjustment and `harness/CI_BUILD_CHECK.md`. Inspect utility before archive.
 
 ### `pre-final-build-2026-08-24`
-
 **Disposition:** `ARCHIVE / CHECKPOINT`  
-**Comparison:** 0 unique commits against current `main`; it is 19 commits behind.
+**Comparison:** 0 unique commits against current `main`; 19 commits behind.
 
-**Action:** preserve as a historical pointer/checkpoint; no code recovery indicated by the comparison.
+No code recovery indicated by the comparison.
 
 ### `v0.2-harness-pilot`
-
 **Disposition:** `ARCHIVE AS HARNESS HISTORY / EXTRACT DECISIONS`  
 **Comparison:** 9 commits ahead, 57 behind current `main`.
 
-Its unique work is primarily early AI/Harness/product documentation: `docs/AI_CONTEXT.md`, product vision/UI spec/reference patterns, early Harness context/state/roadmap/features.
+Unique work is primarily early AI/Harness/product documentation. Preserve decisions as historical evidence; do not restore duplicate Harness documents as competing canonical sources.
 
-**Action:** preserve decisions as historical evidence. Do not restore duplicate Harness documents as competing canonical sources.
+## Pending branches resolved by comparison
 
-## Branches not yet source-compared in this pass
+### `v0.2-harness-pilot-checkpoint`
+**Disposition:** `ARCHIVE / EMPTY DELTA`  
+**Comparison:** 0 commits ahead, 57 behind current `main`; no file delta versus `main`.
 
-These remain explicitly **PENDING**, not classified by guesswork:
+No unique code/document evidence identified by comparison. Retain as historical Git reference for now; no recovery action.
 
-| Branch | Current disposition | Next action |
-|---|---|---|
-| `v0.2-harness-pilot-checkpoint` | PENDING | Compare against `v0.2-harness-pilot` |
-| `v0.2-harness-pilot-rollback` | PENDING | Compare against pilot/checkpoint |
-| `audit/second-radiography` | PENDING / audit history | Inspect only for unique evidence before archive |
-| `audit/persistence-check-2026-08-25` | PENDING / audit history | Compare with newer persistence checkpoint |
-| `audit/persistence-check-2026-08-25b` | PENDING / audit history | Compare with prior persistence checkpoint |
-| `audit/branch-inventory-2026-08-25` | PENDING / audit workspace | Preserve until this audit is finalized |
+### `v0.2-harness-pilot-rollback`
+**Disposition:** `ARCHIVE / EMPTY DELTA`  
+**Comparison:** 0 commits ahead, 57 behind current `main`; no file delta versus `main`.
 
-No branch in this section should be deleted or renamed yet.
+No unique code/document evidence identified by comparison. Retain as historical Git reference for now; no recovery action.
+
+### `audit/second-radiography`
+**Disposition:** `AUDIT HISTORY / DO NOT MERGE BLINDLY`  
+**Comparison:** 22 commits ahead of `main`, 0 behind. Its delta is the first large reconciliation/documentation generation, not product-code recovery. It contains the early Harness, AI context, audit and branch-history material.
+
+**Action:** preserve as audit provenance. Its useful information has been consolidated into current canonical documentation. Do not merge the branch wholesale.
+
+### `audit/persistence-check-2026-08-25`
+**Disposition:** `AUDIT CHECKPOINT / NO PRODUCT RECOVERY`  
+**Comparison:** 23 commits ahead, 0 behind. Delta is documentation/Harness persistence work, including the master context and reconciliation files.
+
+**Action:** preserve as provenance; do not merge wholesale.
+
+### `audit/persistence-check-2026-08-25b`
+**Disposition:** `AUDIT CHECKPOINT / NO PRODUCT RECOVERY`  
+**Comparison:** 24 commits ahead, 0 behind. Delta is documentation/Harness persistence work plus the project-memory checklist.
+
+**Action:** preserve as provenance; do not merge wholesale.
+
+### `audit/branch-inventory-2026-08-25`
+**Disposition:** `AUDIT WORKSPACE / CURRENT INVESTIGATION LINE`  
+**Comparison:** 30 commits ahead, 0 behind. Delta is reconciliation/Harness/audit work and branch-inventory evolution.
+
+**Action:** keep until this radiography is closed. It is not a product-code branch.
 
 ## Complete branch inventory
 
@@ -166,12 +155,12 @@ Future official product releases should use tags/releases such as `V0.x.x`. Deve
 
 ## Current conclusion
 
-The second radiography now establishes four major generations plus a Harness-history layer:
+The second radiography establishes four major product/technical generations plus a Harness-history layer:
 
 1. **Historical V0.2.0 Android/Rust/Gain:** physically validated, with native ELF packaging fix.
 2. **Historical mobile spectrum EQ MVP/APK:** V0.2.1 and V0.2.2 product/APK evolution.
 3. **Historical full-EQ Android:** older EQ/FFT/UI generation.
-4. **Current `main` Kotlin/PCM/DSP:** newer active path, latest runtime still pending.
-5. **Harness-history branches:** valuable for decisions but must not override the current canonical Harness.
+4. **Current `main` Kotlin/PCM/DSP:** newer active path; latest runtime still pending.
+5. **Harness-history branches:** valuable for decisions/provenance but must not override the current canonical Harness.
 
 The goal is not to merge generations wholesale. It is to recover proven components, decisions and lessons while maintaining one canonical current path.
