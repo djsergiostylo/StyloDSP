@@ -85,7 +85,7 @@ class PcmPlayerEngine(
             audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
                 .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(mask).build())
-                .setBufferSizeInBytes(max(minBuf, sampleRate * channels / 4 * 2))
+                .setBufferSizeInBytes(maxOf(minBuf, sampleRate * channels / 4 * 2))
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build().also { it.setVolume(volume) }
 
