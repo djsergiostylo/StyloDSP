@@ -1,5 +1,8 @@
 # StyloDSP — AI Documentation Map
 
+## Purpose
+This map prevents multiple documents from becoming competing sources of truth. Canonical documents contain current truth. Pointer documents redirect to the canonical source. Historical documents preserve evidence but never override current verified state.
+
 ## Canonical order for a new AI
 
 1. `AI_START_HERE.md`
@@ -7,33 +10,39 @@
 3. `docs/AI_MASTER_CONTEXT.md`
 4. `AGENTS.md`
 5. `harness/INSTRUCTIONS.md`
-6. `harness/PROJECT_STATE.md` and `harness/STATE.md` — reconcile if they disagree
-7. `harness/ARCHITECTURE.md`
-8. `harness/ROADMAP.md`
-9. `harness/DECISION_LOG.md`
-10. `harness/RECONCILIATION_PROTOCOL.md`
-11. `harness/AUDIT_PROTOCOL.md`
-12. `harness/VALIDATION_PROTOCOL.md`
-13. latest audit under `harness/audits/`
-14. source code, tests and CI
+6. `harness/DOCUMENT_CONSISTENCY_PROTOCOL.md`
+7. `harness/STATE.md`
+8. `harness/PROJECT_STATE.md`
+9. `harness/ARCHITECTURE.md`
+10. `harness/ROADMAP.md`
+11. `harness/DECISION_LOG.md`
+12. `harness/RECONCILIATION_PROTOCOL.md`
+13. `harness/AUDIT_PROTOCOL.md`
+14. `harness/VALIDATION_PROTOCOL.md`
+15. latest audit under `harness/audits/`
+16. source code, tests and CI
 
-## Intentionally non-canonical documents
+## Pointer / compatibility documents
 
-- `docs/README.md` is an index only.
-- `docs/PROJECT_RECONCILIATION_PROTOCOL.md` is a short pointer to the canonical Harness protocol.
-- `docs/history/STYLO_DSP_EVOLUTION.md` is historical context and must not override verified state.
-- `harness/DECISION_LOG.md` is the canonical durable decision record; do not create a parallel `docs/DECISIONS.md` unless there is a specific reason.
+- `docs/README.md` is an index.
+- `docs/PROJECT_RECONCILIATION_PROTOCOL.md` points to the canonical reconciliation protocol.
+- `harness/DECISIONS.md` is a legacy compatibility pointer to `harness/DECISION_LOG.md`.
+- `harness/VERIFY.md` is a legacy compatibility pointer to `harness/VALIDATION_PROTOCOL.md`.
 
-## Missing files checked
+## Historical / checkpoint documents
 
-The following were searched for because they had appeared in earlier plans but are not present on this branch:
+- `docs/history/STYLO_DSP_EVOLUTION.md` is historical context.
+- `harness/PRODUCTION_STATUS.md` is a dated implementation checkpoint and must not override `STATE.md`.
+- `harness/AUDIT-2026-08-24.md` is historical audit evidence.
+- `harness/audits/*` contains dated audit evidence.
 
-- `docs/DECISIONS.md`
-- `docs/PRODUCTION_STATUS.md`
-- `docs/VERIFY.md`
+## Important distinction
 
-Their absence is not currently treated as an error. If a future workflow requires them, create them intentionally and add them to this map.
+`docs/PRODUCTION_CANDIDATE_0.3.0.md` and similar version-labelled documents describe a candidate or historical target. They are not proof that the current `main` runtime is release-validated.
+
+## Missing names previously investigated
+
+Earlier planning mentioned `docs/DECISIONS.md`, `docs/PRODUCTION_STATUS.md`, and `docs/VERIFY.md`. The current repository uses `harness/DECISIONS.md`, `harness/PRODUCTION_STATUS.md`, and `harness/VERIFY.md` instead. The two legacy policy files are now explicit pointers, while the production-status file remains a dated checkpoint.
 
 ## Rule
-
-A document is canonical only when its role is explicit. Short pointer documents are acceptable when they deliberately redirect to a single canonical source. Duplicate full documents are not.
+A document is canonical only when its role is explicit. Duplicate full policies are not allowed. When a canonical fact changes, update the canonical source and all directly dependent summaries in one synchronized change unit, then perform read-back and contradiction search.
