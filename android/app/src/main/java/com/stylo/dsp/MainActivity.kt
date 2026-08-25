@@ -67,7 +67,13 @@ class MainActivity : Activity() {
             setPadding(8, 6, 8, 6)
         }
         graph = EqGraphView()
-        root.addView(graph, LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(graph, LinearLayout.LayoutParams(-1, 0, 0.55f))
+
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+        root.addView(controls, LinearLayout.LayoutParams(-1, 0, 0.45f))
 
         fileView = TextView(this).apply {
             text = fileLabel
@@ -78,7 +84,7 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(8, 0, 8, 0)
         }
-        root.addView(fileView, LinearLayout.LayoutParams(-1, 30))
+        controls.addView(fileView, LinearLayout.LayoutParams(-1, 28))
 
         seekBar = SeekBar(this).apply {
             max = 1000
@@ -90,7 +96,7 @@ class MainActivity : Activity() {
                 override fun onStopTrackingTouch(s: SeekBar?) {}
             })
         }
-        root.addView(seekBar, LinearLayout.LayoutParams(-1, 34))
+        controls.addView(seekBar, LinearLayout.LayoutParams(-1, 38))
 
         timeView = TextView(this).apply {
             text = "00:00 / 00:00"
@@ -98,7 +104,7 @@ class MainActivity : Activity() {
             textSize = 11f
             gravity = Gravity.CENTER
         }
-        root.addView(timeView, LinearLayout.LayoutParams(-1, 22))
+        controls.addView(timeView, LinearLayout.LayoutParams(-1, 22))
 
         fun row(): LinearLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -107,18 +113,18 @@ class MainActivity : Activity() {
         }
         fun button(label: String, action: () -> Unit): Button = Button(this).apply {
             text = label
-            textSize = 10f
+            textSize = 12f
             isAllCaps = false
-            minHeight = 44
+            minHeight = 56
             minWidth = 0
-            setPadding(1, 0, 1, 0)
+            setPadding(2, 0, 2, 0)
             setOnClickListener { action() }
         }
         fun addButtons(r: LinearLayout, buttons: List<Button>) {
             buttons.forEach { b ->
-                r.addView(b, LinearLayout.LayoutParams(0, 48, 1f).apply { setMargins(2, 0, 2, 0) })
+                r.addView(b, LinearLayout.LayoutParams(0, 58, 1f).apply { setMargins(3, 1, 3, 1) })
             }
-            root.addView(r)
+            controls.addView(r, LinearLayout.LayoutParams(-1, 60))
         }
 
         val transport = row()
@@ -145,10 +151,13 @@ class MainActivity : Activity() {
         abButton = button("A / B: A") { toggleAB() }
         addButtons(modes, listOf(graphicButton, paramButton, typeButton, bypassButton, abButton))
 
-        val utility = row()
+        val utility1 = row()
         val saveButton = button("SAVE") { savePreset() }
         val loadButton = button("LOAD") { loadPreset() }
         val flatButton = button("FLAT") { flatten() }
+        addButtons(utility1, listOf(saveButton, loadButton, flatButton))
+
+        val utility2 = row()
         val resetButton = button("RESET") { resetSelected() }
         val previousButton = button("◀ BAND") { graph.selected = (graph.selected - 1).coerceAtLeast(0); graph.invalidate() }
         val nextButton = button("BAND ▶") {
@@ -156,15 +165,16 @@ class MainActivity : Activity() {
             graph.selected = (graph.selected + 1).coerceAtMost(maxIndex)
             graph.invalidate()
         }
-        addButtons(utility, listOf(saveButton, loadButton, flatButton, resetButton, previousButton, nextButton))
+        addButtons(utility2, listOf(resetButton, previousButton, nextButton))
 
         val volumeRow = row()
         val volumeLabel = TextView(this).apply {
             text = "VOL"
             setTextColor(0xffaebbc2.toInt())
+            textSize = 12f
             gravity = Gravity.CENTER
         }
-        volumeRow.addView(volumeLabel, LinearLayout.LayoutParams(42, 44))
+        volumeRow.addView(volumeLabel, LinearLayout.LayoutParams(48, 48))
         val volume = SeekBar(this).apply {
             max = 100
             progress = 100
@@ -174,8 +184,8 @@ class MainActivity : Activity() {
                 override fun onStopTrackingTouch(s: SeekBar?) {}
             })
         }
-        volumeRow.addView(volume, LinearLayout.LayoutParams(0, 44, 1f))
-        root.addView(volumeRow)
+        volumeRow.addView(volume, LinearLayout.LayoutParams(0, 48, 1f))
+        controls.addView(volumeRow, LinearLayout.LayoutParams(-1, 50))
         setContentView(root)
     }
 
