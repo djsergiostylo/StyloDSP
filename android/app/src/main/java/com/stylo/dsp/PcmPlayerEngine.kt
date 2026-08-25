@@ -90,7 +90,7 @@ class PcmPlayerEngine(
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build().also { it.setVolume(volume) }
 
-            val processors = Array(channels) { EqBank(sampleRate) }
+            val processors = Array(channels) { EqBank(sampleRate.toDouble()) }
             var appliedVersion = -1L
             var inputDone = false
             var outputDone = false
