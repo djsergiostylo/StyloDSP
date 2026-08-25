@@ -81,7 +81,8 @@ class PcmPlayerEngine(
             val mask = if (channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
             val minBuf: Int = AudioTrack.getMinBufferSize(sampleRate, mask, AudioFormat.ENCODING_PCM_16BIT)
             require(minBuf > 0) { "Invalid AudioTrack buffer size: $minBuf" }
-            val streamBufferSize: Int = (sampleRate * channels / 2).coerceAtLeast(minBuf)
+            val requestedBuffer: Int = sampleRate * channels / 2
+            val streamBufferSize: Int = if (requestedBuffer > minBuf) requestedBuffer else minBuf
             audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
                 .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(mask).build())
