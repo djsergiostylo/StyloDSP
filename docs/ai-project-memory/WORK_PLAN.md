@@ -24,13 +24,15 @@ Finish documentation/harness reconciliation before modifying product code.
 - [x] Confirm historical evolution document is explicitly non-canonical.
 - [x] Confirm `harness/DECISION_LOG.md` is the durable decision source.
 - [x] Record missing legacy document names as non-errors.
+- [x] Reconcile `STATE.md` vs `PROJECT_STATE.md`.
+- [x] Reconcile `features.json` against latest evidence.
+- [x] Audit core Harness instructions/architecture/validation/audit/handoff for stale high-level claims.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
-- [ ] Reconcile `STATE.md` vs `PROJECT_STATE.md`.
-- [ ] Reconcile `features.json` against latest evidence.
-- [ ] Audit all harness protocols for stale paths.
+- [ ] Audit all remaining Harness paths/references.
 - [ ] Audit branches and recover unique code.
 - [ ] Reconstruct real APK/runtime status.
+- [ ] Reconcile complete ChatGPT history where available.
 - [ ] Finalize official V0.x.x history.
 - [ ] Generate final local export ZIP.
 - [ ] Review merge to `main`.
