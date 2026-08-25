@@ -3,18 +3,17 @@
 **State date:** 2026-08-25
 **State type:** provisional, pending second deep reconciliation
 
-## Current position
+## Canonical relationship
+`STATE.md` is the concise operational snapshot. This file is the expanded project narrative. They must express the same verified state.
 
-StyloDSP is in a repository-reconciliation and Android validation phase. The Android implementation is substantially beyond the original UI-only prototype, but the repository still contains historical branches and documentation from earlier architectural stages.
+## Current position
+StyloDSP is in repository reconciliation plus Android validation. The Android implementation is substantially beyond the original UI-only prototype, while the repository still contains historical branches and multiple documentation generations.
 
 ## Known implemented path on `main`
 
-The current Android player engine contains a real audio path:
-
 `MediaExtractor → MediaCodec → PCM → EQ → FFT/spectrum → SafetyLimiter → AudioTrack`
 
-Known controls/features in the current engine include:
-
+Known engine capabilities include:
 - load audio URI;
 - play/pause;
 - seek;
@@ -28,39 +27,54 @@ Known controls/features in the current engine include:
 - playback state/duration reporting.
 
 ## Build evidence
+A GitHub Actions Android release artifact was produced from `main` at commit `890a97a1d05448ff0d858aa46bb84fda8b4a4853`.
 
-A GitHub Actions Android release artifact has been produced from `main` at commit `890a97a1d05448ff0d858aa46bb84fda8b4a4853`.
-
-Artifact observed on 2026-08-25:
+Observed artifact:
 `stylo-eq-release-890a97a1d05448ff0d858aa46bb84fda8b4a4853`
 
-Artifact size: approximately 2.23 MB.
+Approximate size: 2.23 MB.
 
 ## Runtime evidence
+Not release-validated. A previous APK test exposed a native-library packaging/runtime issue involving `libstylo_dsp_core.so`. The latest artifact therefore requires installation and real-device testing before release readiness can be claimed.
 
-Runtime validation is not yet considered complete. Previous project testing exposed an Android native-library packaging/runtime issue involving `libstylo_dsp_core.so`. Therefore the current build must be installed and exercised before the release path can be called validated.
+Reference-device context includes Redmi Note 9 Pro-specific UI/layout work.
 
 ## Rust Core
-
-A Rust-core direction exists in project history/branches and in architectural documentation. It is not currently the canonical DSP implementation in `main` and must not be described as integrated until source and runtime evidence confirm it.
+Rust Core is a historical/experimental direction documented in architecture materials and branches. It is not canonical in `main` unless current source, build and runtime evidence prove integration.
 
 ## Repository condition
+Historical/prototype branches and documentation generations remain under reconciliation. No branch should be deleted until its unique commits/files/functionality have been inventoried.
 
-The repository contains multiple historical/prototype branches and documentation generations. Their unique value has not yet been fully reconciled. No branch should be deleted until the second audit records its unique commits/files/functionality.
+## Documentation reconciliation completed so far
+- AI master context exists in `docs/AI_MASTER_CONTEXT.md`.
+- AI documentation map exists in `docs/AI_DOCUMENTATION_MAP.md`.
+- AI Project Memory entrypoint exists in `docs/ai-project-memory/README.md`.
+- `docs/PROJECT_RECONCILIATION_PROTOCOL.md` is a pointer to the canonical Harness protocol.
+- `docs/README.md` is an index.
+- `docs/history/STYLO_DSP_EVOLUTION.md` is historical context.
+- `harness/DECISION_LOG.md` is the durable decision source.
+- Missing legacy document names were recorded instead of fabricated.
+
+## Current blockers
+1. Full tree/file-size audit incomplete.
+2. Cross-reference audit incomplete.
+3. High-value historical branch inventory incomplete.
+4. APK/runtime evidence incomplete.
+5. Full ChatGPT-history ↔ GitHub reconciliation incomplete.
+6. Official V0.x.x historical version map not finalized.
 
 ## Current priority
-
-1. Complete the second deep radiography.
-2. Reconcile important branches against `main`.
-3. Recover valuable historical work.
-4. classify obsolete documentation.
-5. establish real APK/runtime evidence.
-6. update canonical Harness documents.
-7. create one roadmap.
-8. only then perform cleanup or production-code changes.
+1. Complete full tree + file-size audit.
+2. Complete cross-reference audit.
+3. Audit Harness protocols for stale references.
+4. Compare high-value branches with `main`.
+5. Recover valuable historical work selectively.
+6. Reconstruct APK/runtime status.
+7. Reconcile historical AI context with repository evidence.
+8. Finalize canonical documentation/version history.
+9. Only then clean branches or change production architecture.
 
 ## Confidence
-
-High confidence: current Android source/build observations.
-Medium confidence: historical architecture and decisions recovered from previous project material.
-Low/unknown: runtime behavior of the latest APK until tested on-device.
+- High: current Android source/tree observations and recorded CI artifact.
+- Medium: historical architecture and decisions.
+- Low/unknown: latest APK runtime behavior until device validation.
