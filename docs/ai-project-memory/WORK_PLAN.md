@@ -1,17 +1,17 @@
 # AI Project Memory — Active Work Plan
 
 ## Mission
-Finish documentation/harness reconciliation before modifying product code.
+Finish documentation/harness reconciliation before modifying product code, with synchronized canonical documentation and no known cross-document contradictions.
 
 ## Execution loop
 1. Inspect repository state.
 2. Compare documents and source.
 3. Classify canonical vs pointer vs historical.
-4. Fix documentation drift.
-5. Update checklist.
-6. Update roadmap/state.
-7. Commit.
-8. Read back the committed files.
+4. Fix documentation drift as one synchronized change unit.
+5. Update checklist and state.
+6. Commit.
+7. Read back every changed canonical document.
+8. Search for the superseded contradictory claim.
 9. Only then continue.
 
 ## Current checklist
@@ -33,6 +33,11 @@ Finish documentation/harness reconciliation before modifying product code.
 - [x] Recheck `AI_MASTER_CONTEXT`, branch inventory and `STATE` for consistency.
 - [x] Update `STATE` to explicitly separate historical V0.2.0 validation from current-main validation.
 - [x] Confirm updated `STATE` by post-commit read-back.
+- [x] Create canonical document consistency/source-of-truth protocol.
+- [x] Update Harness instructions to enforce synchronized document changes.
+- [x] Synchronize expanded project state with the new consistency protocol.
+- [x] Read back the new consistency protocol, instructions and project state.
+- [x] Search repository for known stale H-002 `PASSING` claim; retained only in historical audit evidence.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
@@ -48,4 +53,5 @@ Finish documentation/harness reconciliation before modifying product code.
 - Do not mark PASSING without evidence.
 - Do not migrate the architecture broadly before reconciliation.
 - Do not treat branch names as product versions.
-- Do not claim persistence without commit + read-back.
+- Do not claim persistence without commit + read-back + cross-reference check.
+- If canonical documents disagree, stop feature work and reconcile them before continuing.
