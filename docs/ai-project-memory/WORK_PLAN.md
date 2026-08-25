@@ -44,10 +44,14 @@ Finish documentation/harness reconciliation before modifying product code, with 
 - [x] Update branch inventory with V0.2.1/V0.2.2 divergence and recovery rules.
 - [x] Search repository for embedded tool/chat citation markup; none found.
 - [x] Verify branch inventory read-back after update.
+- [x] Compare `prototype/android-apk`, `prototype/android-apk-v2`, `ci/android-build-verification`, `pre-final-build-2026-08-24` and `v0.2-harness-pilot` against `main`.
+- [x] Expand branch inventory to all 20 currently listed branches and explicitly mark uninspected branches as PENDING.
+- [x] Preserve branch disposition as evidence; no branch deletion or rename performed.
+- [ ] Compare remaining pending audit/checkpoint branches.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
-- [ ] Compare remaining historical branches and recover unique code.
+- [ ] Recover unique historical code/decisions where justified.
 - [ ] Reconstruct latest APK/runtime status.
 - [ ] Reconcile complete ChatGPT history where available.
 - [ ] Finalize official V0.x.x history.
