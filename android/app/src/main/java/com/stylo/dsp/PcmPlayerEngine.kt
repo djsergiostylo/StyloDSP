@@ -12,7 +12,6 @@ import android.os.Handler
 import android.os.Looper
 import java.nio.ByteOrder
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.max
 
 /** MediaExtractor -> MediaCodec -> PCM -> EQ -> FFT -> AudioTrack. */
 class PcmPlayerEngine(
@@ -80,12 +79,13 @@ class PcmPlayerEngine(
             codec.configure(format, null, null, 0)
             codec.start()
             val mask = if (channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO
-            val minBuf = AudioTrack.getMinBufferSize(sampleRate, mask, AudioFormat.ENCODING_PCM_16BIT)
+            val minBuf: Int = AudioTrack.getMinBufferSize(sampleRate, mask, AudioFormat.ENCODING_PCM_16BIT)
             require(minBuf > 0) { "Invalid AudioTrack buffer size: $minBuf" }
+            val streamBufferSize: Int = (sampleRate * channels / 2).coerceAtLeast(minBuf)
             audioTrack = AudioTrack.Builder()
                 .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
                 .setAudioFormat(AudioFormat.Builder().setSampleRate(sampleRate).setEncoding(AudioFormat.ENCODING_PCM_16BIT).setChannelMask(mask).build())
-                .setBufferSizeInBytes(maxOf(minBuf, sampleRate * channels / 4 * 2))
+                .setBufferSizeInBytes(streamBufferSize)
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build().also { it.setVolume(volume) }
 
