@@ -2,25 +2,28 @@
 
 Harness is the operational control layer for AI-assisted work on StyloDSP.
 
-## Start here
+## Canonical entry sequence
 
-Read `../AI_START_HERE.md` first.
+1. `../AI_START_HERE.md`
+2. `../AI_CONTEXT.md`
+3. `../AGENTS.md`
+4. `INSTRUCTIONS.md`
+5. `STATE.md` + `PROJECT_STATE.md`
+6. `DOCUMENT_CONSISTENCY_PROTOCOL.md`
+7. `ARCHITECTURE.md`
+8. `ROADMAP.md`
+9. `DECISION_LOG.md`
+10. `RECONCILIATION_PROTOCOL.md`
+11. `AUDIT_PROTOCOL.md`
+12. `VALIDATION_PROTOCOL.md`
+13. latest relevant file under `audits/`
+14. source/tests/CI only after the above
 
-Then use:
-
-- `INSTRUCTIONS.md` for AI working rules.
-- `PROJECT_STATE.md` for current state.
-- `ARCHITECTURE.md` for current vs future architecture.
-- `ROADMAP.md` for the single roadmap.
-- `DECISION_LOG.md` for durable decisions.
-- `RECONCILIATION_PROTOCOL.md` for periodic project cleanup/reconciliation.
-- `AUDIT_PROTOCOL.md` for evidence classification.
-- `VALIDATION_PROTOCOL.md` for runtime/build validation.
-- `SESSION_HANDOFF.md` for session continuity.
-- `audits/` for dated audit records.
+## Authority rule
+Each document has one defined role. `STATE.md`, `PROJECT_STATE.md`, `features.json`, `DECISION_LOG.md`, `ARCHITECTURE.md`, `ROADMAP.md`, validation/audit protocols and the master AI context are canonical within their domains. Compatibility pointers and historical records never override canonical state.
 
 ## Core rule
 
-**Understand → compare → document → validate → modify.**
+**Understand → compare → classify → document → validate → modify → read back → cross-check.**
 
-Do not treat a successful build as proof of runtime functionality.
+Do not treat a successful build as proof of runtime functionality. Do not create a second source of truth when an existing canonical document already owns the information.
