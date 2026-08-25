@@ -30,6 +30,9 @@ Finish documentation/harness reconciliation before modifying product code.
 - [x] Correct AI context/entrypoint to distinguish historical V0.2.0 runtime validation from current `main` runtime status.
 - [x] Inventory high-value branches: `core-rust`, `android-v0.2.0-validated`, `android-gain-realtime`, `prod/full-eq-v1`.
 - [x] Record historical V0.2.0 physical-device validation evidence.
+- [x] Recheck `AI_MASTER_CONTEXT`, branch inventory and `STATE` for consistency.
+- [x] Update `STATE` to explicitly separate historical V0.2.0 validation from current-main validation.
+- [x] Confirm updated `STATE` by post-commit read-back.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
