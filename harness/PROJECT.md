@@ -1,51 +1,45 @@
-# STYLO HARNESS · PILOTO
+# STYLO HARNESS · PROJECT
 
 ## Proyecto
 StyloDSP
 
-## Propósito del piloto
-Aplicar Harness Engineering al desarrollo del STYLO DSP CORE para comprobar que distintas IA pueden continuar el mismo proyecto usando una fuente de verdad persistente, estados explícitos y verificación objetiva.
+## Propósito
+Aplicar Harness Engineering para que ChatGPT, Gemini, Codex u otros agentes puedan continuar StyloDSP con una memoria técnica persistente, estados explícitos, decisiones registradas y verificación objetiva.
 
-## Objetivo técnico actual
-Proteger y acelerar la transición hacia un Core DSP multiplataforma en Rust, manteniendo la implementación existente como referencia.
-
-## Primer hito
-**Core + Gain + Android APK experimental**.
-
-## Entornos de IA
-- ChatGPT
-- Gemini
-- Codex
-- Cualquier agente compatible con Git/GitHub
+## Estado actual
+El proyecto está en fase de **reconciliación profunda y validación Android**. La implementación Android real ha avanzado bastante más que el prototipo documentado inicialmente. Antes de nuevas expansiones arquitectónicas se debe reconciliar el repositorio completo.
 
 ## Principio central
-El repositorio contiene el estado operativo del proyecto. La conversación es temporal; los documentos del harness son persistentes.
+El repositorio contiene la memoria operativa persistente del proyecto. Las conversaciones son evidencia histórica y fuente de decisiones, pero deben contrastarse con el código y la evidencia actual.
 
-## Alcance del piloto
-1. Instrucciones del agente.
-2. Estado persistente.
-3. Backlog verificable.
-4. Criterios de aceptación.
-5. Handoff entre sesiones.
-6. Registro de decisiones.
-7. Verificación antes de declarar PASSING.
+## Entrada obligatoria para IA
+- `AI_START_HERE.md`
+- `AI_CONTEXT.md`
+- `AGENTS.md`
 
-## Fuera de alcance inicial
-- Automatización autónoma continua.
-- Subagentes complejos.
-- Graph Engineering.
-- Migración masiva de todos los módulos.
-- UI final.
+## Documentos operativos
+- `harness/INSTRUCTIONS.md`
+- `harness/STATE.md`
+- `harness/PROJECT_STATE.md`
+- `harness/ARCHITECTURE.md`
+- `harness/ROADMAP.md`
+- `harness/DECISION_LOG.md`
+- `harness/RECONCILIATION_PROTOCOL.md`
+- `harness/AUDIT_PROTOCOL.md`
+- `harness/VALIDATION_PROTOCOL.md`
+- `harness/SESSION_HANDOFF.md`
+- `harness/audits/`
 
-## Gates
-1. Rust Core build
-2. Gain tests
-3. Realtime safety
-4. Android APK
-5. Web/WASM parity
-6. Más módulos DSP
-7. VST3 adapter
-8. Presets/paridad completa
+## Hito actual
+**H-002 — second deep repository radiography and reconciliation.**
 
-## Regla de oro
-No avanzar de capa con una capa anterior en FAIL o sin evidencia suficiente.
+## Gate de progreso
+No pasar a limpieza de ramas, migración de arquitectura o nuevas grandes funcionalidades hasta:
+1. completar la auditoría;
+2. reconciliar ramas y documentación;
+3. reconstruir el estado real del APK/runtime;
+4. actualizar la fuente de verdad;
+5. registrar las decisiones.
+
+## Arquitectura futura
+Rust Core, WASM y VST3 son líneas de evolución, no deben considerarse implementaciones actuales sin evidencia verificable.
