@@ -5,7 +5,7 @@
 **Active feature:** H-002 Repository reconciliation and executable verification baseline
 
 ## Canonical status
-`STATE.md` is the concise operational state. `PROJECT_STATE.md` contains the expanded narrative. If they disagree, reconcile them in the same change before proceeding.
+`STATE.md` is the concise operational state. `PROJECT_STATE.md` contains the expanded narrative. Source-of-truth and synchronization rules are defined in `harness/DOCUMENT_CONSISTENCY_PROTOCOL.md`.
 
 ## Current truth
 - Repository: `djsergiostylo/StyloDSP`
@@ -32,6 +32,7 @@
 - Documentation map created.
 - Master AI context created and read back after commit.
 - Persistence checklist created and committed on an audit branch.
+- `harness/DOCUMENT_CONSISTENCY_PROTOCOL.md` is now the canonical synchronization/source-of-truth map.
 - `docs/PROJECT_RECONCILIATION_PROTOCOL.md` confirmed as a pointer to the canonical Harness protocol.
 - `docs/README.md` confirmed as an index.
 - `docs/history/STYLO_DSP_EVOLUTION.md` confirmed as historical context.
@@ -43,20 +44,19 @@
 1. Full branch reconciliation is incomplete.
 2. Full tree/file-size/cross-reference audit is incomplete.
 3. `features.json` is evidence-driven and keeps H-002 `IN_PROGRESS`.
-4. `STATE.md` and `PROJECT_STATE.md` are intentionally parallel documents and must be kept synchronized.
+4. Remaining historical branches still need classification before cleanup.
 5. Current `main` APK/runtime needs device evidence.
-6. Remaining historical branches still need classification before cleanup.
 
 ## Next sequence
 1. Complete full tree + file-size audit.
-2. Complete cross-reference audit.
-3. Audit all Harness protocols for stale paths.
+2. Complete cross-reference audit using the document consistency protocol.
+3. Audit all remaining Harness paths/references.
 4. Compare remaining important branches against `main`.
 5. Identify branch-only valuable code and decisions.
 6. Reconstruct current APK/runtime state.
 7. Reconcile available ChatGPT project history with repository evidence.
 8. Finalize official V0.x.x genealogy.
-9. Update canonical documentation and roadmap.
+9. Update canonical documentation and roadmap as one synchronized change unit.
 10. Only then clean branches or modify production architecture.
 
 ## Rule
