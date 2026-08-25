@@ -27,11 +27,14 @@ Finish documentation/harness reconciliation before modifying product code.
 - [x] Reconcile `STATE.md` vs `PROJECT_STATE.md`.
 - [x] Reconcile `features.json` against latest evidence.
 - [x] Audit core Harness instructions/architecture/validation/audit/handoff for stale high-level claims.
+- [x] Correct AI context/entrypoint to distinguish historical V0.2.0 runtime validation from current `main` runtime status.
+- [x] Inventory high-value branches: `core-rust`, `android-v0.2.0-validated`, `android-gain-realtime`, `prod/full-eq-v1`.
+- [x] Record historical V0.2.0 physical-device validation evidence.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
-- [ ] Audit branches and recover unique code.
-- [ ] Reconstruct real APK/runtime status.
+- [ ] Compare remaining historical branches and recover unique code.
+- [ ] Reconstruct latest APK/runtime status.
 - [ ] Reconcile complete ChatGPT history where available.
 - [ ] Finalize official V0.x.x history.
 - [ ] Generate final local export ZIP.
