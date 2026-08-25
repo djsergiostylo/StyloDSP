@@ -40,8 +40,10 @@ Finish documentation/harness reconciliation before modifying product code, with 
 - [x] Search repository for known stale H-002 `PASSING` claim; retained only in historical audit evidence.
 - [x] Classify `v0.2.1-stylo-eq-mvp` as product-history/MVP source.
 - [x] Classify `v0.2.2-first-apk-mvp` as APK-history source.
-- [x] Update branch inventory with V0.2.1/V0.2.2 divergence and actions.
+- [x] Compare V0.2.1/V0.2.2 against current `main` and record branch-only evidence.
+- [x] Update branch inventory with V0.2.1/V0.2.2 divergence and recovery rules.
 - [x] Search repository for embedded tool/chat citation markup; none found.
+- [x] Verify branch inventory read-back after update.
 - [ ] Complete full tree + file-size audit.
 - [ ] Complete cross-reference audit.
 - [ ] Audit all remaining Harness paths/references.
