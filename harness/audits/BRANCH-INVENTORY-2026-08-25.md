@@ -90,7 +90,16 @@ Comparison against `main`: 19 commits ahead of the shared merge base and 57 behi
 
 Its first exclusive commit explicitly redefined v0.2 as a mobile spectrum EQ vertical slice. The branch therefore represents a product-definition/MVP generation, not merely an implementation fork.
 
-**Action:** inspect its exclusive product/spec/UI/feature documents and source before deciding whether any material should be promoted to canonical history or recovered.
+### Branch-only evidence identified by comparison
+
+- Earlier Android application and launcher structure.
+- `docs/STYLO_EQ_PRODUCT_VISION.md`.
+- `docs/STYLO_EQ_UI_SPEC.md`.
+- `docs/PRODUCTION_PLAN.md`.
+- `docs/REFERENCE_PATTERNS.md`.
+- Earlier Harness state/roadmap/version snapshots.
+
+**Action:** preserve the product/spec decisions as historical evidence. Do not promote duplicate AI/Harness state documents into canonical status. Recover code only after source-level comparison against current architecture.
 
 ## `v0.2.2-first-apk-mvp`
 
@@ -98,9 +107,15 @@ Its first exclusive commit explicitly redefined v0.2 as a mobile spectrum EQ ver
 
 Comparison against `main`: 28 commits ahead of the shared merge base and 57 behind current `main`.
 
-Its first exclusive commit is the same v0.2 mobile-spectrum-EQ product pivot, followed by additional APK/MVP work. The branch is therefore relevant to reconstructing how the first APK generation evolved.
+### Branch-only evidence identified by comparison
 
-**Action:** inspect exclusive APK/build/UI/runtime evidence separately from the current `main` implementation.
+- Earlier Android APK application.
+- Native CMake bridge and `native-lib.cpp`.
+- Early Rust `core/Cargo.toml` and `core/src/lib.rs`.
+- Product vision/UI/reference documentation.
+- Earlier Harness state/roadmap/version snapshots.
+
+**Action:** preserve APK/build/native integration evidence separately from current `main`. Compare native/Rust source with `core-rust` and `android-gain-realtime` before considering recovery.
 
 ## Other important branches
 
