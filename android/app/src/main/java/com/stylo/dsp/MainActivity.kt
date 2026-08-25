@@ -323,10 +323,10 @@ class MainActivity : Activity() {
 
         fun setSpectrum(value: FloatArray) { spectrum = value; postInvalidateOnAnimation() }
 
-        private fun xToFreq(x: Float, width: Float): Double = 20.0 * exp(ln(1000.0) * x / width.coerceAtLeast(1f))
-        private fun freqToX(freq: Double, width: Float): Float = (ln(freq / 20.0) / ln(1000.0) * width).toFloat()
-        private fun gainToY(gain: Double, height: Float): Float = height * 0.43f - (gain / 24.0 * height * 0.32f)
-        private fun yToGain(y: Float, height: Float): Double = ((height * 0.43f - y) / (height * 0.32f) * 24.0).coerceIn(-24.0, 24.0)
+        private fun xToFreq(x: Float, width: Float): Double = 20.0 * exp(ln(1000.0) * x.toDouble() / width.coerceAtLeast(1f).toDouble())
+        private fun freqToX(freq: Double, width: Float): Float = (ln(freq / 20.0) / ln(1000.0) * width.toDouble()).toFloat()
+        private fun gainToY(gain: Double, height: Float): Float = (height.toDouble() * 0.43 - (gain / 24.0 * height.toDouble() * 0.32)).toFloat()
+        private fun yToGain(y: Float, height: Float): Double = ((height.toDouble() * 0.43 - y.toDouble()) / (height.toDouble() * 0.32) * 24.0).coerceIn(-24.0, 24.0)
 
         override fun onDraw(canvas: Canvas) {
             val width = width.toFloat()
