@@ -1,21 +1,10 @@
 # STYLO HARNESS · DECISIONS
 
-## D-001 · Pilot repository
-**Decision:** Use `djsergiostylo/StyloDSP` as the first Harness Engineering pilot.
+This file is a compatibility pointer for older project tooling.
 
-**Reason:** It already has a documented modular DSP architecture, explicit platform targets and a clear first milestone: Core + Gain + Android APK.
+## Canonical source
+All durable project decisions are maintained in `harness/DECISION_LOG.md`.
 
-## D-002 · Repository as source of truth
-**Decision:** Persistent project state lives in GitHub files, not only in chat history.
+The four D-001…D-004 decisions historically recorded here were preserved in the canonical decision log or superseded by the current reconciliation decisions.
 
-**Reason:** ChatGPT, Gemini and Codex can all consume the same project state when operating on the repository.
-
-## D-003 · Incremental harness
-**Decision:** Start with instructions, state, feature tracking, verification and handoff before adding autonomous loops or graph orchestration.
-
-**Reason:** Validate the control system first; add autonomy only after the baseline is trustworthy.
-
-## D-004 · No false completion
-**Decision:** PASSING requires acceptance criteria plus evidence.
-
-**Reason:** The harness exists to reduce regressions, forgotten work and unsupported claims of completion.
+**Rule:** Do not add new durable decisions to this file. Add them to `harness/DECISION_LOG.md` instead.
