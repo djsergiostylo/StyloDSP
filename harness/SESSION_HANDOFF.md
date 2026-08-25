@@ -1,41 +1,45 @@
 # STYLO HARNESS · SESSION HANDOFF
 
 ## Session
-2026-08-25 · AI project memory and reconciliation setup
+2026-08-25 · Harness reconciliation pass
 
-## Completed
-- Performed first repository/state radiography of `djsergiostylo/StyloDSP`.
-- Identified drift between current Android source, historical documentation, branches, CI evidence and Harness state.
-- Added `AI_START_HERE.md` and `AI_CONTEXT.md` as the entry point for new AI agents.
-- Added canonical AI-working, project-state, architecture, roadmap, decision, reconciliation, audit and validation documents under `harness/`.
-- Added a dated reconciliation baseline under `harness/audits/`.
-- Created branch `docs/ai-project-memory` to stage the documentation changes without modifying `main`.
+## Completed in this pass
+- Audited `STATE.md`, `PROJECT_STATE.md`, `features.json`, `INSTRUCTIONS.md`, `ARCHITECTURE.md`, `VALIDATION_PROTOCOL.md`, `AUDIT_PROTOCOL.md` and `SESSION_HANDOFF.md`.
+- Confirmed `STATE.md` is the concise operational state and `PROJECT_STATE.md` is the expanded narrative.
+- Downgraded H-002 from the stale historical `PASSING` claim to `IN_PROGRESS` with evidence requirements.
+- Confirmed the Android PCM/DSP path documented in current Harness state.
+- Confirmed Rust is historical/experimental, not canonical in `main`.
+- Created `docs/AI_MASTER_CONTEXT.md` and confirmed it by post-commit read-back.
+- Created the AI documentation map and active work plan.
+- Classified short documentation files as deliberate pointers/history rather than automatic errors.
+- Recorded absent legacy document names instead of creating unnecessary duplicates.
 
 ## Current truth
-- Current Android source is substantially beyond the original UI-only prototype.
-- The known PCM path is `MediaExtractor → MediaCodec → PCM → EQ → FFT/spectrum → SafetyLimiter → AudioTrack`.
-- GitHub Actions has produced an Android release artifact from `main`.
-- Runtime validation is still incomplete.
-- A previous APK test exposed a native-library packaging/runtime issue, so build success must not be treated as runtime success.
-- Rust Core remains a future/experimental architecture rather than the canonical DSP implementation in `main`.
-- Multiple historical/prototype branches still require reconciliation before cleanup.
+- Canonical product branch: `main`.
+- Documentation/reconciliation branch: `docs/ai-project-memory`.
+- H-002 remains `IN_PROGRESS`.
+- Android build/artifact evidence exists; runtime release validation remains incomplete.
+- Historical native-library packaging/runtime failure remains an explicit validation item.
+- Branch reconciliation remains incomplete.
 
 ## Active phase
 **H-002 / second deep repository radiography and reconciliation**
 
-## Next action
-1. Audit `main` completely.
-2. Compare important branches against `main`.
-3. Identify branch-only valuable work.
-4. Classify obsolete/contradictory documentation.
-5. Reconstruct the real APK/runtime state.
-6. Reconcile ChatGPT-derived decisions with repository evidence.
-7. Update canonical Harness state.
-8. Only then clean branches or change production architecture.
+## Next actions
+1. Finish full tree + file-size audit.
+2. Finish cross-reference audit.
+3. Audit all Harness documents for stale paths or conflicting claims.
+4. Compare high-value historical branches against `main`.
+5. Inventory branch-only files/commits and recover valuable work selectively.
+6. Reconstruct current APK/runtime evidence.
+7. Reconcile ChatGPT project history with GitHub evidence.
+8. Canonicalize final project state, roadmap and version history.
+9. Only then clean branches or modify production architecture.
 
-## Important constraints
-- Do not delete branches or valuable code before identifying their contents and value.
+## Constraints
+- Do not delete branches or valuable code before inventory.
 - Do not claim runtime readiness without runtime evidence.
 - Do not treat historical documentation as current truth.
-- Do not begin broad architecture refactoring before reconciliation is complete.
-- Keep the repository as the persistent source of project memory.
+- Do not perform broad architectural refactoring before reconciliation.
+- Persist important decisions and evidence in the repository.
+- A document is considered persisted only after commit + post-commit read-back.
